@@ -129,7 +129,7 @@ def dibujar_instrucciones(pantalla, fuente_titulo, fuente, fuente_chica):
         "Separá los dedos para lanzar el hechizo:",
         "se desvanecen todos los espíritus con ese sigilo.",
         "Si uno toca al gato, perdés una vida. Tenés tres.",
-        "Resistí tres oleadas y el bosque vuelve a dormir.",
+        "Superá los tres niveles y el bosque vuelve a dormir.",
     ]
     for i in range(len(lineas)):
         escribir(pantalla, fuente_chica, lineas[i], BLANCO_AZULADO, (ANCHO // 2, panel.top + 125 + i * 32))

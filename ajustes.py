@@ -42,15 +42,41 @@ ALTO_PIEDRA = 50
 # --- Fantasmas ---
 SIMBOLOS = ["—", "|", "V", "Λ"]
 RADIO_FANTASMA = 28
-VELOCIDAD_FANTASMA = 1.2       # píxeles por cuadro en la oleada 1
-AUMENTO_VELOCIDAD = 0.5        # cuánto más rápido en cada oleada
-FANTASMAS_POR_OLEADA = 6
-CUADROS_ENTRE_FANTASMAS = 75   # 2,5 segundos a 30 FPS
 
 # --- Partida ---
 VIDAS = 3
-OLEADAS_PARA_GANAR = 3
 PUNTOS_POR_FANTASMA = 10
+CUADROS_CARTEL = 150       # cuánto dura el cartel que presenta cada nivel (5 segundos)
+
+# --- Niveles ---
+# Cada nivel es un diccionario. Para cambiar la dificultad, se toca acá y nada más.
+#   fantasmas: cuántos aparecen en total
+#   velocidad: píxeles por cuadro
+#   espera:    cuadros entre un fantasma y el siguiente
+#   novedades: lo que se muestra en el cartel al empezar el nivel
+NIVELES = [
+    {
+        "nombre": "El despertar",
+        "fantasmas": 8,
+        "velocidad": 1.2,
+        "espera": 75,
+        "novedades": ["Dibujá el sigilo de cada espíritu para espantarlo."],
+    },
+    {
+        "nombre": "La niebla espesa",
+        "fantasmas": 10,
+        "velocidad": 1.6,
+        "espera": 65,
+        "novedades": ["Los espíritus se mueven más rápido."],
+    },
+    {
+        "nombre": "Raíces que susurran",
+        "fantasmas": 12,
+        "velocidad": 2.0,
+        "espera": 55,
+        "novedades": ["Vienen más espíritus, y más seguido."],
+    },
+]
 
 # --- Sonido ---
 VOLUMEN_INICIAL = 0.7      # entre 0 y 1
