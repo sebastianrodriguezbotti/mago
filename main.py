@@ -4,6 +4,7 @@
 import random
 import pygame
 import vision
+import menu
 from hechizos import reconocer_simbolo
 from fantasma import Fantasma
 from ajustes import *
@@ -67,12 +68,6 @@ def dibujar_gato(pantalla):
     pygame.draw.circle(pantalla, COLOR_SIMBOLO, (GATO_X + 10, GATO_Y - 6), 5)
 
 
-def escribir(pantalla, fuente, texto, color, centro):
-    sup = fuente.render(texto, True, color)
-    rect = sup.get_rect(center=centro)
-    pantalla.blit(sup, rect)
-
-
 # ---------- Preparación (todo se carga una sola vez, antes del bucle) ----------
 
 pygame.init()
@@ -87,6 +82,10 @@ sonido_hechizo = pygame.mixer.Sound("sonidos/hechizo.wav")
 sonido_fallo = pygame.mixer.Sound("sonidos/fallo.wav")
 sonido_dano = pygame.mixer.Sound("sonidos/dano.wav")
 sonido_fin = pygame.mixer.Sound("sonidos/fin.wav")
+sonidos = [sonido_hechizo, sonido_fallo, sonido_dano, sonido_fin]
+
+volumen = VOLUMEN_INICIAL
+menu.aplicar_volumen(sonidos, volumen)
 
 cap = vision.abrir_camara()
 if cap is None:
@@ -99,9 +98,11 @@ sombra = pygame.Surface((ANCHO, ALTO))
 sombra.fill((0, 0, 0))
 sombra.set_alpha(130)
 
+escena = "menu"     # "menu", "instrucciones" o "juego"
+seleccion = 0       # opción marcada en el menú
 partida = nueva_partida()
-trazo = []          # puntos que se están dibujando con la varita
-sin_varita = 0      # cuadros seguidos sin ver la varita
+trazo = []          # puntos que se están dibujando con la mano
+sin_varita = 0      # cuadros seguidos sin pellizco
 pos = None
 
 
@@ -114,22 +115,56 @@ while andando:
     for e in pygame.event.get():
         if e.type == pygame.QUIT:
             andando = False
-        elif e.type == pygame.KEYDOWN and e.key == pygame.K_r:
-            if partida["estado"] != "jugando":
+
+        elif e.type == pygame.KEYDOWN and escena == "menu":
+            if e.key == pygame.K_ESCAPE:
+                andando = False
+            elif e.key == pygame.K_UP:
+                seleccion = (seleccion - 1) % len(menu.OPCIONES)
+            elif e.key == pygame.K_DOWN:
+                seleccion = (seleccion + 1) % len(menu.OPCIONES)
+            elif menu.OPCIONES[seleccion] == "Volumen" and e.key in (pygame.K_LEFT, pygame.K_RIGHT):
+                if e.key == pygame.K_LEFT:
+                    volumen = menu.cambiar_volumen(volumen, -1)
+                else:
+                    volumen = menu.cambiar_volumen(volumen, 1)
+                menu.aplicar_volumen(sonidos, volumen)
+                sonido_hechizo.play()    # para escuchar cómo quedó
+            elif e.key == pygame.K_RETURN:
+                opcion = menu.OPCIONES[seleccion]
+                if opcion == "Jugar":
+                    partida = nueva_partida()
+                    trazo = []
+                    sin_varita = 0
+                    escena = "juego"
+                elif opcion == "Instrucciones":
+                    escena = "instrucciones"
+                elif opcion == "Salir":
+                    andando = False
+
+        elif e.type == pygame.KEYDOWN and escena == "instrucciones":
+            if e.key in (pygame.K_ESCAPE, pygame.K_RETURN):
+                escena = "menu"
+
+        elif e.type == pygame.KEYDOWN and escena == "juego":
+            if e.key == pygame.K_ESCAPE:
+                escena = "menu"
+            elif e.key == pygame.K_r and partida["estado"] != "jugando":
                 partida = nueva_partida()
                 trazo = []
+                sin_varita = 0
 
     # --- Cámara ---
     frame = vision.leer_cuadro(cap)
-    if frame is not None:
-        pos = vision.detectar_varita(frame)
+    if frame is not None and escena == "juego":
+        pos = vision.detectar_mano(frame)
     else:
         pos = None
 
     # --- Actualizar ---
-    if partida["estado"] == "jugando":
+    if escena == "juego" and partida["estado"] == "jugando":
 
-        # 1. La varita: sumar puntos al trazo, o terminarlo
+        # 1. La mano: sumar puntos al trazo, o terminarlo
         if pos is not None:
             trazo.append(pos)
             sin_varita = 0
@@ -191,30 +226,40 @@ while andando:
         pantalla.fill((0, 0, 0))
     pantalla.blit(sombra, (0, 0))
 
-    dibujar_gato(pantalla)
-    for f in partida["fantasmas"]:
-        f.dibujar(pantalla)
+    if escena == "menu":
+        menu.dibujar_menu(pantalla, fuente, fuente_grande, seleccion, volumen)
 
-    if len(trazo) >= 2:
-        pygame.draw.lines(pantalla, COLOR_TRAZO, False, trazo, 6)
-    if pos is not None:
-        pygame.draw.circle(pantalla, COLOR_TRAZO, pos, 12, 3)
+    elif escena == "instrucciones":
+        menu.dibujar_instrucciones(pantalla, fuente, fuente_grande)
 
-    # indicadores
-    info = f"Puntos: {partida['puntos']}   Vidas: {partida['vidas']}   Oleada: {partida['oleada']}/{OLEADAS_PARA_GANAR}"
-    pantalla.blit(fuente.render(info, True, COLOR_TEXTO), (10, 10))
+    else:
+        dibujar_gato(pantalla)
+        for f in partida["fantasmas"]:
+            f.dibujar(pantalla)
 
-    if partida["estado"] == "jugando" and sin_varita > CUADROS_AVISO:
-        escribir(pantalla, fuente, "Mostrá la varita a la cámara", COLOR_AVISO, (ANCHO // 2, ALTO // 2))
+        if len(trazo) >= 2:
+            pygame.draw.lines(pantalla, COLOR_TRAZO, False, trazo, 6)
+        if pos is not None:
+            pygame.draw.circle(pantalla, COLOR_TRAZO, pos, 12, 3)
 
-    if partida["estado"] != "jugando":
-        if partida["estado"] == "ganaste":
-            titulo = "¡Ganaste!"
-        else:
-            titulo = "Perdiste"
-        escribir(pantalla, fuente_grande, titulo, COLOR_TEXTO, (ANCHO // 2, ALTO // 2 - 30))
-        escribir(pantalla, fuente, f"Puntos: {partida['puntos']}  -  Apretá R para jugar de nuevo",
-                 COLOR_TEXTO, (ANCHO // 2, ALTO // 2 + 20))
+        # indicadores
+        info = f"Puntos: {partida['puntos']}   Vidas: {partida['vidas']}   Oleada: {partida['oleada']}/{OLEADAS_PARA_GANAR}"
+        pantalla.blit(fuente.render(info, True, COLOR_TEXTO), (10, 10))
+
+        if partida["estado"] == "jugando" and sin_varita > CUADROS_AVISO:
+            menu.escribir(pantalla, fuente, "Juntá índice y pulgar para dibujar",
+                          COLOR_AVISO, (ANCHO // 2, ALTO // 2))
+
+        if partida["estado"] != "jugando":
+            if partida["estado"] == "ganaste":
+                titulo = "¡Ganaste!"
+            else:
+                titulo = "Perdiste"
+            menu.escribir(pantalla, fuente_grande, titulo, COLOR_TEXTO, (ANCHO // 2, ALTO // 2 - 40))
+            menu.escribir(pantalla, fuente, f"Puntos: {partida['puntos']}",
+                          COLOR_TEXTO, (ANCHO // 2, ALTO // 2 + 5))
+            menu.escribir(pantalla, fuente, "R: jugar de nuevo    Esc: menú",
+                          COLOR_ELEGIDO, (ANCHO // 2, ALTO // 2 + 40))
 
     pygame.display.flip()
     reloj.tick(FPS)

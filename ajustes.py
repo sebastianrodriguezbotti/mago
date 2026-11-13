@@ -7,10 +7,14 @@ ANCHO = 640
 ALTO = 480
 FPS = 30
 
-# --- Detección por color (en HSV) ---
-# Rango para un objeto VERDE (tapita, marcador, pelotita).
-# Para calibrar: corré probar_vision.py, hacé clic sobre tu objeto
-# y mirá en la terminal qué valores H, S, V tiene.
+# --- Detección de la mano ---
+# Se dibuja juntando índice y pulgar ("pellizco").
+# Cuenta como pellizco si la distancia entre las dos puntas es menor que
+# esta proporción del tamaño de la mano (muñeca -> base del dedo medio).
+# Si cuesta que dibuje, subilo (0.45). Si dibuja solo, bajalo (0.25).
+PROPORCION_PELLIZCO = 0.35
+
+# --- Detección por color (alternativa, en HSV) ---
 COLOR_MIN = (40, 80, 80)
 COLOR_MAX = (85, 255, 255)
 AREA_MINIMA = 500          # manchas más chicas que esto se consideran ruido
@@ -34,6 +38,10 @@ AUMENTO_VELOCIDAD = 0.4        # cuánto más rápido en cada oleada
 FANTASMAS_POR_OLEADA = 6
 CUADROS_ENTRE_FANTASMAS = 75   # 2,5 segundos a 30 FPS
 
+# --- Sonido ---
+VOLUMEN_INICIAL = 0.7      # entre 0 y 1
+PASO_VOLUMEN = 0.1         # cuánto cambia con cada flecha
+
 # --- Partida ---
 VIDAS = 3
 OLEADAS_PARA_GANAR = 3
@@ -48,3 +56,5 @@ COLOR_SIMBOLO = (255, 220, 60)
 COLOR_GATO = (60, 60, 70)
 COLOR_SOMBRERO = (110, 60, 200)
 COLOR_AVISO = (255, 90, 90)
+COLOR_ELEGIDO = (255, 220, 60)     # opción marcada en el menú
+COLOR_APAGADO = (170, 170, 190)    # opciones no marcadas y textos secundarios

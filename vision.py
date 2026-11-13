@@ -1,9 +1,15 @@
 # vision.py
-# Todo lo de OpenCV: abrir la cámara, leer el cuadro y detectar.
-# El resto del juego solo usa lo que devuelven estas funciones.
+# Todo lo de OpenCV y MediaPipe: abrir la cámara, leer el cuadro y detectar.
+# El resto del juego solo usa lo que devuelven estas funciones: (x, y) o None.
 
+import math
 import cv2
-from ajustes import CAMARA_INDICE, ANCHO, ALTO, COLOR_MIN, COLOR_MAX, AREA_MINIMA
+import mediapipe as mp
+from ajustes import (CAMARA_INDICE, ANCHO, ALTO, COLOR_MIN, COLOR_MAX,
+                     AREA_MINIMA, PROPORCION_PELLIZCO)
+
+# Lo que se prepara una sola vez, al hacer import vision
+manos = mp.solutions.hands.Hands(max_num_hands=1)
 
 
 def abrir_camara():
@@ -27,8 +33,40 @@ def leer_cuadro(cap):
     return frame
 
 
-def detectar_varita(frame):
-    """Busca el objeto del color de la varita.
+def a_pixeles(punto, ancho, alto):
+    """Pasa un punto de MediaPipe (x e y entre 0 y 1) a píxeles."""
+    return (int(punto.x * ancho), int(punto.y * alto))
+
+
+def detectar_mano(frame):
+    """Busca una mano haciendo 'pellizco' (índice y pulgar juntos).
+    Devuelve (x, y), el punto entre las dos puntas, o None si no hay
+    mano o si los dedos están separados."""
+    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    resultado = manos.process(rgb)
+    if resultado.multi_hand_landmarks is None:
+        return None
+
+    mano = resultado.multi_hand_landmarks[0]
+    alto, ancho = frame.shape[:2]
+    muneca = a_pixeles(mano.landmark[0], ancho, alto)
+    nudillo = a_pixeles(mano.landmark[9], ancho, alto)   # base del dedo medio
+    pulgar = a_pixeles(mano.landmark[4], ancho, alto)    # punta del pulgar
+    indice = a_pixeles(mano.landmark[8], ancho, alto)    # punta del índice
+
+    # El tamaño de la mano sirve de regla: así funciona cerca o lejos de la cámara
+    tamano_mano = math.dist(muneca, nudillo)
+    separacion = math.dist(pulgar, indice)
+    if separacion > tamano_mano * PROPORCION_PELLIZCO:
+        return None
+
+    x = (pulgar[0] + indice[0]) // 2
+    y = (pulgar[1] + indice[1]) // 2
+    return (x, y)
+
+
+def detectar_color(frame):
+    """Versión anterior, con un objeto de color. Queda como alternativa.
     Devuelve (x, y), el centro de la mancha más grande, o None."""
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     mascara = cv2.inRange(hsv, COLOR_MIN, COLOR_MAX)
@@ -41,10 +79,3 @@ def detectar_varita(frame):
         return None
     x, y, w, h = cv2.boundingRect(grande)
     return (x + w // 2, y + h // 2)
-
-
-def color_hsv(frame, x, y):
-    """Devuelve el color (h, s, v) de un píxel. Sirve para calibrar."""
-    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    h, s, v = hsv[y, x]
-    return (int(h), int(s), int(v))

@@ -1,8 +1,7 @@
 # probar_vision.py
 # Prueba de vision.py y hechizos.py antes de armar el juego.
-# - Mostrá la varita y movela: se dibuja el trazo.
-# - Escondela: el trazo termina y aparece qué símbolo reconoció.
-# - Clic sobre la imagen: imprime el HSV de ese píxel (para calibrar).
+# - Juntá índice y pulgar y mové la mano: se dibuja el trazo.
+# - Separá los dedos: el trazo termina y aparece qué símbolo reconoció.
 # - C borra el trazo. La X cierra.
 
 import pygame
@@ -25,7 +24,6 @@ if cap is None:
 trazo = []              # puntos del trazo que se está dibujando
 sin_varita = 0          # cuántos cuadros seguidos no se vio la varita
 ultimo_simbolo = "-"    # lo último que se reconoció
-frame = None
 
 andando = True
 while andando:
@@ -33,9 +31,6 @@ while andando:
     for e in pygame.event.get():
         if e.type == pygame.QUIT:
             andando = False
-        elif e.type == pygame.MOUSEBUTTONDOWN and frame is not None:
-            x, y = e.pos
-            print("HSV en", (x, y), "=", vision.color_hsv(frame, x, y))
         elif e.type == pygame.KEYDOWN and e.key == pygame.K_c:
             trazo = []
 
@@ -44,7 +39,7 @@ while andando:
     if frame is None:
         continue
 
-    pos = vision.detectar_varita(frame)
+    pos = vision.detectar_mano(frame)
     if pos is not None:
         trazo.append(pos)
         sin_varita = 0
