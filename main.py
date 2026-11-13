@@ -1,12 +1,13 @@
 # main.py
-# El gato mago: dibujá en el aire el símbolo de cada fantasma para eliminarlo.
+# El gato mago: dibujá en el aire el sigilo de cada espíritu para espantarlo.
 
 import random
 import pygame
 import vision
 import menu
 from hechizos import reconocer_simbolo
-from fantasma import Fantasma
+from fantasma import Fantasma, crear_sprite_fantasma
+from escenario import Bosque, cargar_fuente, dibujar_trazo, dibujar_cursor, dibujar_brillo, mezclar
 from ajustes import *
 
 
@@ -51,21 +52,21 @@ def lanzar_hechizo(fantasmas, simbolo):
     return sobrevivientes
 
 
-def dibujar_gato(pantalla):
-    # cuerpo y cabeza
-    pygame.draw.ellipse(pantalla, COLOR_GATO, (GATO_X - 35, GATO_Y, 70, 60))
-    pygame.draw.circle(pantalla, COLOR_GATO, (GATO_X, GATO_Y - 5), 28)
-    # orejas
-    pygame.draw.polygon(pantalla, COLOR_GATO,
-                        [(GATO_X - 26, GATO_Y - 15), (GATO_X - 18, GATO_Y - 42), (GATO_X - 6, GATO_Y - 28)])
-    pygame.draw.polygon(pantalla, COLOR_GATO,
-                        [(GATO_X + 26, GATO_Y - 15), (GATO_X + 18, GATO_Y - 42), (GATO_X + 6, GATO_Y - 28)])
-    # sombrero de mago
-    pygame.draw.polygon(pantalla, COLOR_SOMBRERO,
-                        [(GATO_X - 20, GATO_Y - 30), (GATO_X + 20, GATO_Y - 30), (GATO_X + 5, GATO_Y - 80)])
-    # ojos
-    pygame.draw.circle(pantalla, COLOR_SIMBOLO, (GATO_X - 10, GATO_Y - 6), 5)
-    pygame.draw.circle(pantalla, COLOR_SIMBOLO, (GATO_X + 10, GATO_Y - 6), 5)
+def dibujar_espejo(pantalla, frame, pos):
+    """La cámara chiquita en la esquina, con marco de plata."""
+    chico = vision.cuadro_espejo(frame)
+    sup = pygame.image.frombuffer(chico.tobytes(), (ESPEJO_ANCHO, ESPEJO_ALTO), "BGR")
+    x = ANCHO - ESPEJO_ANCHO - ESPEJO_MARGEN
+    y = ALTO - ESPEJO_ALTO - ESPEJO_MARGEN
+    pantalla.blit(sup, (x, y))
+    marco = pygame.Rect(x, y, ESPEJO_ANCHO, ESPEJO_ALTO)
+    pygame.draw.rect(pantalla, PLATA, marco, 1)
+    pygame.draw.rect(pantalla, mezclar(NOCHE_1, PLATA, 0.4), marco.inflate(8, 8), 1)
+    # dónde está la varita, también en el espejo
+    if pos is not None:
+        px = x + pos[0] * ESPEJO_ANCHO // ANCHO
+        py = y + pos[1] * ESPEJO_ALTO // ALTO
+        pygame.draw.circle(pantalla, CIAN_CLARO, (px, py), 4)
 
 
 # ---------- Preparación (todo se carga una sola vez, antes del bucle) ----------
@@ -74,9 +75,13 @@ pygame.init()
 pygame.mixer.init()
 pantalla = pygame.display.set_mode((ANCHO, ALTO))
 pygame.display.set_caption("El gato mago")
+pygame.mouse.set_visible(False)      # el cursor es un fuego fatuo
 reloj = pygame.time.Clock()
-fuente = pygame.font.SysFont(None, 32)
-fuente_grande = pygame.font.SysFont(None, 64)
+
+fuente_titulo = cargar_fuente(FUENTE_TITULO, 62)
+fuente_subtitulo = cargar_fuente(FUENTE_TITULO, 34)
+fuente = cargar_fuente(FUENTE_TEXTO, 36)
+fuente_chica = cargar_fuente(FUENTE_TEXTO, 25)
 
 sonido_hechizo = pygame.mixer.Sound("sonidos/hechizo.wav")
 sonido_fallo = pygame.mixer.Sound("sonidos/fallo.wav")
@@ -93,13 +98,19 @@ if cap is None:
     pygame.quit()
     raise SystemExit
 
-# capa negra semitransparente para oscurecer la cámara de fondo
-sombra = pygame.Surface((ANCHO, ALTO))
-sombra.fill((0, 0, 0))
-sombra.set_alpha(130)
+bosque = Bosque()
+sprite_fantasma = crear_sprite_fantasma()
+
+# velos oscuros: para el fin de partida y para los fundidos a negro
+velo = pygame.Surface((ANCHO, ALTO), pygame.SRCALPHA)
+velo.fill((*NOCHE_1, 170))
+negro = pygame.Surface((ANCHO, ALTO))
+negro.fill(NOCHE_1)
 
 escena = "menu"     # "menu", "instrucciones" o "juego"
 seleccion = 0       # opción marcada en el menú
+destino = None      # a qué escena vamos cuando hay un fundido; None si no hay
+fundido = 255       # 0 = se ve todo, 255 = todo negro. Arranca en negro y aparece.
 partida = nueva_partida()
 trazo = []          # puntos que se están dibujando con la mano
 sin_varita = 0      # cuadros seguidos sin pellizco
@@ -116,43 +127,82 @@ while andando:
         if e.type == pygame.QUIT:
             andando = False
 
-        elif e.type == pygame.KEYDOWN and escena == "menu":
-            if e.key == pygame.K_ESCAPE:
-                andando = False
-            elif e.key == pygame.K_UP:
-                seleccion = (seleccion - 1) % len(menu.OPCIONES)
-            elif e.key == pygame.K_DOWN:
-                seleccion = (seleccion + 1) % len(menu.OPCIONES)
-            elif menu.OPCIONES[seleccion] == "Volumen" and e.key in (pygame.K_LEFT, pygame.K_RIGHT):
-                if e.key == pygame.K_LEFT:
-                    volumen = menu.cambiar_volumen(volumen, -1)
-                else:
-                    volumen = menu.cambiar_volumen(volumen, 1)
-                menu.aplicar_volumen(sonidos, volumen)
-                sonido_hechizo.play()    # para escuchar cómo quedó
-            elif e.key == pygame.K_RETURN:
+        if destino is not None:
+            continue            # durante un fundido no se aceptan teclas
+
+        if escena == "menu":
+            elegir = False
+            if e.type == pygame.MOUSEMOTION:
+                debajo = menu.opcion_bajo_mouse(fuente, e.pos, volumen)
+                if debajo is not None:
+                    seleccion = debajo
+            elif e.type == pygame.MOUSEBUTTONDOWN and e.button == 1:
+                debajo = menu.opcion_bajo_mouse(fuente, e.pos, volumen)
+                if debajo is not None:
+                    seleccion = debajo
+                    if menu.OPCIONES[seleccion] == "Volumen":
+                        # clic a la izquierda baja, a la derecha sube
+                        if e.pos[0] < ANCHO // 2:
+                            volumen = menu.cambiar_volumen(volumen, -1)
+                        else:
+                            volumen = menu.cambiar_volumen(volumen, 1)
+                        menu.aplicar_volumen(sonidos, volumen)
+                        sonido_hechizo.play()
+                    else:
+                        elegir = True
+            elif e.type == pygame.KEYDOWN:
+                if e.key == pygame.K_ESCAPE:
+                    destino = "salir"
+                elif e.key == pygame.K_UP:
+                    seleccion = (seleccion - 1) % len(menu.OPCIONES)
+                elif e.key == pygame.K_DOWN:
+                    seleccion = (seleccion + 1) % len(menu.OPCIONES)
+                elif menu.OPCIONES[seleccion] == "Volumen" and e.key in (pygame.K_LEFT, pygame.K_RIGHT):
+                    if e.key == pygame.K_LEFT:
+                        volumen = menu.cambiar_volumen(volumen, -1)
+                    else:
+                        volumen = menu.cambiar_volumen(volumen, 1)
+                    menu.aplicar_volumen(sonidos, volumen)
+                    sonido_hechizo.play()    # para escuchar cómo quedó
+                elif e.key == pygame.K_RETURN:
+                    elegir = True
+
+            if elegir:
                 opcion = menu.OPCIONES[seleccion]
                 if opcion == "Jugar":
-                    partida = nueva_partida()
-                    trazo = []
-                    sin_varita = 0
-                    escena = "juego"
+                    destino = "juego"
                 elif opcion == "Instrucciones":
-                    escena = "instrucciones"
+                    destino = "instrucciones"
                 elif opcion == "Salir":
-                    andando = False
+                    destino = "salir"
 
-        elif e.type == pygame.KEYDOWN and escena == "instrucciones":
-            if e.key in (pygame.K_ESCAPE, pygame.K_RETURN):
-                escena = "menu"
+        elif escena == "instrucciones":
+            if e.type == pygame.KEYDOWN and e.key in (pygame.K_ESCAPE, pygame.K_RETURN):
+                destino = "menu"
+            elif e.type == pygame.MOUSEBUTTONDOWN:
+                destino = "menu"
 
-        elif e.type == pygame.KEYDOWN and escena == "juego":
+        elif escena == "juego" and e.type == pygame.KEYDOWN:
             if e.key == pygame.K_ESCAPE:
-                escena = "menu"
+                destino = "menu"
             elif e.key == pygame.K_r and partida["estado"] != "jugando":
+                destino = "juego"
+
+    # --- Fundido a negro entre escenas ---
+    if destino is not None:
+        fundido = min(255, fundido + VELOCIDAD_FUNDIDO)
+        if fundido == 255:
+            # ya está todo negro: recién ahora se cambia de escena
+            if destino == "salir":
+                andando = False
+            elif destino == "juego":
                 partida = nueva_partida()
                 trazo = []
                 sin_varita = 0
+            escena = destino
+            destino = None
+    elif fundido > 0:
+        fundido = max(0, fundido - VELOCIDAD_FUNDIDO)
 
     # --- Cámara ---
     frame = vision.leer_cuadro(cap)
@@ -162,6 +212,8 @@ while andando:
         pos = None
 
     # --- Actualizar ---
+    bosque.actualizar()
+
     if escena == "juego" and partida["estado"] == "jugando":
 
         # 1. La mano: sumar puntos al trazo, o terminarlo
@@ -219,47 +271,65 @@ while andando:
                 partida["espera"] = CUADROS_ENTRE_FANTASMAS
 
     # --- Dibujar ---
-    if frame is not None:
-        sup = pygame.image.frombuffer(frame.tobytes(), (ANCHO, ALTO), "BGR")
-        pantalla.blit(sup, (0, 0))
-    else:
-        pantalla.fill((0, 0, 0))
-    pantalla.blit(sombra, (0, 0))
+    # de atrás hacia adelante: lo que se dibuja después queda encima
+    bosque.dibujar_fondo(pantalla)
+    bosque.dibujar_piedras(pantalla, False)
+    bosque.dibujar_gato(pantalla)
+    bosque.dibujar_piedras(pantalla, True)
+
+    if escena == "juego":
+        for f in partida["fantasmas"]:
+            f.dibujar(pantalla, sprite_fantasma, bosque.brillo_fuego)
+
+    bosque.dibujar_frente(pantalla)
 
     if escena == "menu":
-        menu.dibujar_menu(pantalla, fuente, fuente_grande, seleccion, volumen)
+        menu.dibujar_menu(pantalla, fuente_titulo, fuente, fuente_chica, seleccion, volumen)
+        dibujar_cursor(pantalla, bosque.brillo_chico, pygame.mouse.get_pos())
 
     elif escena == "instrucciones":
-        menu.dibujar_instrucciones(pantalla, fuente, fuente_grande)
+        menu.dibujar_instrucciones(pantalla, fuente_subtitulo, fuente, fuente_chica)
+        dibujar_cursor(pantalla, bosque.brillo_chico, pygame.mouse.get_pos())
 
     else:
-        dibujar_gato(pantalla)
-        for f in partida["fantasmas"]:
-            f.dibujar(pantalla)
-
-        if len(trazo) >= 2:
-            pygame.draw.lines(pantalla, COLOR_TRAZO, False, trazo, 6)
+        dibujar_trazo(pantalla, trazo)
         if pos is not None:
-            pygame.draw.circle(pantalla, COLOR_TRAZO, pos, 12, 3)
+            dibujar_cursor(pantalla, bosque.brillo_chico, pos)
 
-        # indicadores
-        info = f"Puntos: {partida['puntos']}   Vidas: {partida['vidas']}   Oleada: {partida['oleada']}/{OLEADAS_PARA_GANAR}"
-        pantalla.blit(fuente.render(info, True, COLOR_TEXTO), (10, 10))
+        # indicadores: puntos a la izquierda, vidas como fuegos fatuos, oleada a la derecha
+        pantalla.blit(fuente.render(f"Puntos  {partida['puntos']}", True, COLOR_TEXTO), (24, 16))
+        for i in range(partida["vidas"]):
+            centro = (36 + i * 30, 76)
+            dibujar_brillo(pantalla, bosque.brillo_chico, centro, 1)
+            pygame.draw.circle(pantalla, CIAN_CLARO, centro, 4)
+        texto = fuente.render(f"Oleada  {partida['oleada']} de {OLEADAS_PARA_GANAR}", True, COLOR_TEXTO)
+        pantalla.blit(texto, (ANCHO - texto.get_width() - 24, 16))
+
+        if frame is not None:
+            dibujar_espejo(pantalla, frame, pos)
 
         if partida["estado"] == "jugando" and sin_varita > CUADROS_AVISO:
-            menu.escribir(pantalla, fuente, "Juntá índice y pulgar para dibujar",
-                          COLOR_AVISO, (ANCHO // 2, ALTO // 2))
+            menu.escribir(pantalla, fuente_chica, "Juntá el índice y el pulgar para dibujar",
+                          COLOR_AVISO, (ANCHO // 2, ALTO // 2 - 60))
 
         if partida["estado"] != "jugando":
+            pantalla.blit(velo, (0, 0))
             if partida["estado"] == "ganaste":
-                titulo = "¡Ganaste!"
+                titulo = "Ganaste"
+                frase = "El bosque vuelve a dormir"
             else:
                 titulo = "Perdiste"
-            menu.escribir(pantalla, fuente_grande, titulo, COLOR_TEXTO, (ANCHO // 2, ALTO // 2 - 40))
-            menu.escribir(pantalla, fuente, f"Puntos: {partida['puntos']}",
-                          COLOR_TEXTO, (ANCHO // 2, ALTO // 2 + 5))
-            menu.escribir(pantalla, fuente, "R: jugar de nuevo    Esc: menú",
-                          COLOR_ELEGIDO, (ANCHO // 2, ALTO // 2 + 40))
+                frase = "La niebla se llevó al gato"
+            menu.escribir_tallado(pantalla, fuente_titulo, titulo, (ANCHO // 2, ALTO // 2 - 70))
+            menu.escribir(pantalla, fuente, frase, PLATA, (ANCHO // 2, ALTO // 2 - 10))
+            menu.separador(pantalla, ALTO // 2 + 25, 300)
+            menu.escribir(pantalla, fuente, f"Puntos  {partida['puntos']}", COLOR_TEXTO, (ANCHO // 2, ALTO // 2 + 60))
+            menu.escribir_brillante(pantalla, fuente_chica, "R  jugar de nuevo     ·     Esc  volver al menú",
+                                    (ANCHO // 2, ALTO // 2 + 110))
+
+    if fundido > 0:
+        negro.set_alpha(fundido)
+        pantalla.blit(negro, (0, 0))
 
     pygame.display.flip()
     reloj.tick(FPS)

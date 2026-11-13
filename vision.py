@@ -6,7 +6,8 @@ import math
 import cv2
 import mediapipe as mp
 from ajustes import (CAMARA_INDICE, ANCHO, ALTO, COLOR_MIN, COLOR_MAX,
-                     AREA_MINIMA, PROPORCION_PELLIZCO)
+                     AREA_MINIMA, PROPORCION_PELLIZCO,
+                     ESPEJO_ANCHO, ESPEJO_ALTO)
 
 # Lo que se prepara una sola vez, al hacer import vision
 manos = mp.solutions.hands.Hands(max_num_hands=1)
@@ -31,6 +32,16 @@ def leer_cuadro(cap):
     frame = cv2.flip(frame, 1)
     frame = cv2.resize(frame, (ANCHO, ALTO))
     return frame
+
+
+def cuadro_espejo(frame):
+    """Devuelve el cuadro chiquito, en gris teñido de azul, para el espejo de la esquina."""
+    chico = cv2.resize(frame, (ESPEJO_ANCHO, ESPEJO_ALTO))
+    gris = cv2.cvtColor(chico, cv2.COLOR_BGR2GRAY)
+    azul = gris
+    verde = (gris * 0.8).astype("uint8")
+    rojo = (gris * 0.55).astype("uint8")
+    return cv2.merge([azul, verde, rojo])    # en BGR: primero el azul
 
 
 def a_pixeles(punto, ancho, alto):
