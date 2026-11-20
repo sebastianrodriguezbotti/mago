@@ -49,27 +49,49 @@ def separador(pantalla, centro_y, ancho):
     pygame.draw.circle(pantalla, color, (cx + ancho // 2, centro_y), 2)
 
 
-def crear_titulo(fuente):
-    """Arma una sola vez el título del juego, con un brillo celeste suave alrededor.
-    Si queda más ancho que TITULO_ANCHO_MAXIMO, lo achica. Devuelve la superficie."""
-    texto = fuente.render(TITULO_JUEGO, True, BLANCO_AZULADO)
-    halo = fuente.render(TITULO_JUEGO, True, CIAN)
-    halo.set_alpha(22)                # muy transparente: brilla solo un poco
-    margen = 12
-    titulo = pygame.Surface((texto.get_width() + margen * 2, texto.get_height() + margen * 2),
-                            pygame.SRCALPHA)
-    # el halo se pega muchas veces alrededor, corrido: se acumula y parece un resplandor
-    for dx in range(-6, 7, 2):
-        for dy in range(-6, 7, 2):
-            if dx * dx + dy * dy <= 36:
-                titulo.blit(halo, (margen + dx, margen + dy))
-    titulo.blit(texto, (margen, margen))
+def borronear(sup, cuanto):
+    """Devuelve la superficie borroneada: se achica y se vuelve a agrandar, y pierde detalle."""
+    ancho, alto = sup.get_size()
+    chica = pygame.transform.smoothscale(sup, (max(1, ancho // cuanto), max(1, alto // cuanto)))
+    return pygame.transform.smoothscale(chica, (ancho, alto))
 
-    if titulo.get_width() > TITULO_ANCHO_MAXIMO:
-        escala = TITULO_ANCHO_MAXIMO / titulo.get_width()
-        nuevo = (int(titulo.get_width() * escala), int(titulo.get_height() * escala))
-        titulo = pygame.transform.smoothscale(titulo, nuevo)
-    return titulo
+
+def crear_titulo(fuente):
+    """Arma una sola vez el título del juego: letras blancas con resplandor cian.
+    Si queda más ancho que TITULO_ANCHO_MAXIMO, lo achica.
+    Devuelve (superficie, margen): el margen es el espacio que se dejó para el resplandor."""
+    margen = 40
+    renglones = [fuente.render(linea, True, BLANCO) for linea in TITULO_JUEGO]
+    ancho = max(r.get_width() for r in renglones) + margen * 2
+    alto = TITULO_INTERLINEADO * (len(renglones) - 1) + renglones[-1].get_height() + margen * 2
+
+    letras = pygame.Surface((ancho, alto), pygame.SRCALPHA)
+    cian = pygame.Surface((ancho, alto), pygame.SRCALPHA)
+    for i in range(len(TITULO_JUEGO)):
+        y = margen + i * TITULO_INTERLINEADO
+        letras.blit(renglones[i], (margen, y))
+        cian.blit(fuente.render(TITULO_JUEGO[i], True, CIAN), (margen, y))
+
+    # el resplandor: las letras en cian, borroneadas. Uno cercano y fuerte, otro amplio y suave.
+    titulo = pygame.Surface((ancho, alto), pygame.SRCALPHA)
+    cerca = borronear(cian, 6)
+    lejos = borronear(cian, 16)
+    titulo.blit(lejos, (0, 0))
+    titulo.blit(cerca, (0, 0))
+    titulo.blit(cerca, (0, 0))
+    titulo.blit(letras, (0, 0))
+
+    if ancho - margen * 2 > TITULO_ANCHO_MAXIMO:
+        escala = TITULO_ANCHO_MAXIMO / (ancho - margen * 2)
+        titulo = pygame.transform.smoothscale(titulo, (int(ancho * escala), int(alto * escala)))
+        margen = int(margen * escala)
+    return (titulo, margen)
+
+
+def dibujar_titulo(pantalla, titulo):
+    """titulo es lo que devolvió crear_titulo: (superficie, margen)."""
+    sup, margen = titulo
+    pantalla.blit(sup, (MENU_X - margen, TITULO_Y - margen))
 
 
 # ---------- Volumen ----------
@@ -104,7 +126,7 @@ def rect_opcion(fuente, lista, i):
     if lista is OPCIONES_SONIDO and lista[i] != "Volver":
         ancho = BARRA_X + BARRA_ANCHO - MENU_X     # la fila entera, con la barra
     else:
-        ancho = fuente.size(lista[i])[0]
+        ancho = fuente.size(lista[i].upper())[0]
     alto = fuente.get_height()
     return pygame.Rect(MENU_X - 30, MENU_Y + i * MENU_SEPARACION - alto // 2, ancho + 60, alto)
 
@@ -183,25 +205,46 @@ def evento_sonido(e, fuente, seleccion, volumenes):
     return seleccion, que_paso
 
 
+def evento_instrucciones(e, fuente):
+    """Recibe un evento en "Cómo jugar". Devuelve "volver" si hay que volver al menú, o None."""
+    if e.type == pygame.KEYDOWN and e.key in (pygame.K_ESCAPE, pygame.K_RETURN):
+        return "volver"
+    if e.type == pygame.MOUSEBUTTONDOWN and e.button == 1:
+        if rect_volver_instrucciones(fuente).collidepoint(e.pos):
+            return "volver"
+    return None
+
+
+def rect_volver_instrucciones(fuente):
+    """Devuelve el rectángulo del botón VOLVER de "Cómo jugar"."""
+    ancho, alto = fuente.size("VOLVER")
+    return pygame.Rect(MENU_X - 30, ALTO - 60 - alto // 2, ancho + 60, alto)
+
+
 # ---------- Pantallas ----------
 
 def dibujar_opcion(pantalla, fuente, texto, y, elegida):
-    """Una opción del menú, alineada a la izquierda. La elegida brilla y se corre un poco."""
+    """Una opción del menú, en mayúsculas y alineada a la izquierda.
+    La elegida brilla, se corre un poco y tiene un rombo celeste al costado."""
+    texto = texto.upper()
     if elegida:
         # una runa chiquita a la izquierda marca la opción elegida
         cx = MENU_X - 18
         pygame.draw.polygon(pantalla, CIAN, [(cx, y - 6), (cx + 6, y), (cx, y + 6), (cx - 6, y)])
         escribir_brillante(pantalla, fuente, texto, (MENU_X + 10, y), "midleft")
     else:
-        escribir(pantalla, fuente, texto, BLANCO_AZULADO, (MENU_X, y), "midleft")
+        escribir(pantalla, fuente, texto, BLANCO, (MENU_X, y), "midleft")
 
 
 def dibujar_menu(pantalla, titulo, fuente, fuente_chica, seleccion):
-    pantalla.blit(titulo, (MENU_X - 12, TITULO_Y))
+    dibujar_titulo(pantalla, titulo)
     for i in range(len(OPCIONES)):
         dibujar_opcion(pantalla, fuente, OPCIONES[i], MENU_Y + i * MENU_SEPARACION, i == seleccion)
-    escribir(pantalla, fuente_chica, "Flechas o mouse para elegir  ·  Esc para salir",
-             mezclar(NOCHE_1, PLATA, 0.8), (MENU_X, ALTO - 30), "midleft")
+    # la frase de abajo a la derecha, cada renglón centrado en el mismo eje
+    alto = fuente_chica.get_height()
+    for i in range(len(FRASE_INICIO)):
+        y = ALTO - 40 - (len(FRASE_INICIO) - 1 - i) * alto
+        escribir(pantalla, fuente_chica, FRASE_INICIO[i], BLANCO, (ANCHO - 170, y))
 
 
 def dibujar_barra(pantalla, y, volumen):
@@ -215,7 +258,7 @@ def dibujar_barra(pantalla, y, volumen):
 
 
 def dibujar_sonido(pantalla, titulo, fuente, fuente_chica, seleccion, volumenes):
-    pantalla.blit(titulo, (MENU_X - 12, TITULO_Y))
+    dibujar_titulo(pantalla, titulo)
     for i in range(len(OPCIONES_SONIDO)):
         y = MENU_Y + i * MENU_SEPARACION
         opcion = OPCIONES_SONIDO[i]
@@ -225,34 +268,34 @@ def dibujar_sonido(pantalla, titulo, fuente, fuente_chica, seleccion, volumenes)
             dibujar_barra(pantalla, y, volumenes[clave])
             escribir(pantalla, fuente_chica, f"{int(volumenes[clave] * 100)}%", BLANCO_AZULADO,
                      (BARRA_X + BARRA_ANCHO + 25, y), "midleft")
-    escribir(pantalla, fuente_chica, "Flechas izquierda y derecha, o clic en la barra  ·  Esc para volver",
-             mezclar(NOCHE_1, PLATA, 0.8), (MENU_X, ALTO - 30), "midleft")
 
 
-def dibujar_instrucciones(pantalla, fuente_titulo, fuente, fuente_chica):
-    # un panel oscuro con marco fino de plata
-    panel = pygame.Rect(0, 0, 720, 570)
-    panel.center = (ANCHO // 2, ALTO // 2)
-    velo = pygame.Surface(panel.size, pygame.SRCALPHA)
-    velo.fill((*NOCHE_1, 220))
-    pantalla.blit(velo, panel.topleft)
-    pygame.draw.rect(pantalla, PLATA, panel, 1)
-    pygame.draw.rect(pantalla, mezclar(NOCHE_1, PLATA, 0.4), panel.inflate(-10, -10), 1)
+def crear_sombra_izquierda():
+    """Una sombra que oscurece la mitad izquierda de la pantalla, para leer bien el texto.
+    Se crea una sola vez."""
+    sombra = pygame.Surface((ANCHO, ALTO), pygame.SRCALPHA)
+    hasta = int(ANCHO * 0.8)
+    for x in range(hasta):
+        alfa = int(215 * (1 - x / hasta))
+        pygame.draw.line(sombra, (*NOCHE_1, alfa), (x, 0), (x, ALTO))
+    return sombra
 
-    escribir_tallado(pantalla, fuente_titulo, "Cómo jugar", (ANCHO // 2, panel.top + 45))
-    separador(pantalla, panel.top + 82, 300)
 
-    y = panel.top + 110
-    escribir(pantalla, fuente, "Objetivo", CIAN, (ANCHO // 2, y))
+def dibujar_instrucciones(pantalla, fuente_titulo, fuente, fuente_chica, sombra):
+    pantalla.blit(sombra, (0, 0))
+    escribir(pantalla, fuente_titulo, "CÓMO JUGAR", BLANCO, (MENU_X, 70), "midleft")
+
+    y = 140
+    escribir(pantalla, fuente, "OBJETIVO", CIAN, (MENU_X, y), "midleft")
     objetivo = [
         "Protegé al gato mago de los espíritus del bosque.",
         "Superá los tres niveles para que el bosque vuelva a dormir.",
     ]
     for i in range(len(objetivo)):
-        escribir(pantalla, fuente_chica, objetivo[i], BLANCO_AZULADO, (ANCHO // 2, y + 36 + i * 28))
+        escribir(pantalla, fuente_chica, objetivo[i], BLANCO, (MENU_X, y + 34 + i * 26), "midleft")
 
-    y = panel.top + 220
-    escribir(pantalla, fuente, "Cómo se juega", CIAN, (ANCHO // 2, y))
+    y = 250
+    escribir(pantalla, fuente, "CÓMO SE JUEGA", CIAN, (MENU_X, y), "midleft")
     lineas = [
         "Cada espíritu lleva un sigilo sobre la cabeza.",
         "Juntá el índice y el pulgar y dibujá ese sigilo en el aire.",
@@ -261,12 +304,12 @@ def dibujar_instrucciones(pantalla, fuente_titulo, fuente, fuente_chica):
         "Si uno toca al gato, perdés una vida. Tenés tres.",
     ]
     for i in range(len(lineas)):
-        escribir(pantalla, fuente_chica, lineas[i], BLANCO_AZULADO, (ANCHO // 2, y + 36 + i * 28))
+        escribir(pantalla, fuente_chica, lineas[i], BLANCO, (MENU_X, y + 34 + i * 26), "midleft")
 
     # los cuatro sigilos que existen
     simbolos = ["—", "|", "V", "Λ"]
     for i in range(len(simbolos)):
-        x = ANCHO // 2 - 165 + i * 110
-        dibujar_simbolo(pantalla, simbolos[i], x, panel.bottom - 85, 18)
+        dibujar_simbolo(pantalla, simbolos[i], MENU_X + 20 + i * 90, 470, 18)
 
-    escribir(pantalla, fuente_chica, "Esc o Enter para volver", PLATA, (ANCHO // 2, panel.bottom - 30))
+    # el único botón: VOLVER, siempre elegido
+    dibujar_opcion(pantalla, fuente, "Volver", ALTO - 60, True)

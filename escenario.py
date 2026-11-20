@@ -23,12 +23,14 @@ def mezclar(color1, color2, k):
     return (r, g, b)
 
 
-def cargar_fuente(archivo, tamano, negrita=False):
-    """Carga una fuente de la carpeta fuentes/. Si no está, usa una de Windows."""
+def cargar_fuente(archivo, tamano):
+    """Carga una fuente de la carpeta fuentes/. Si no está, usa una parecida de Windows."""
     ruta = os.path.join("fuentes", archivo)
     if os.path.exists(ruta):
         return pygame.font.Font(ruta, tamano)
-    return pygame.font.SysFont(FUENTE_RESPALDO, tamano, bold=negrita)
+    if archivo == FUENTE_TITULO:
+        return pygame.font.SysFont(RESPALDO_TITULO, tamano)
+    return pygame.font.SysFont(RESPALDO_TEXTO, tamano)
 
 
 def cargar_imagen_fondo(ruta_sin_extension):

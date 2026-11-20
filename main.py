@@ -76,13 +76,14 @@ recursos = {
     "bosque": bosque,
     "sprite": crear_sprite_fantasma(),
     "velo": velo,
-    "titulo": cargar_fuente(FUENTE_TITULO, 62),
-    "subtitulo": cargar_fuente(FUENTE_TITULO, 34),
-    "texto": cargar_fuente(FUENTE_TEXTO, 36),
-    "chica": cargar_fuente(FUENTE_TEXTO, 25),
+    "titulo": cargar_fuente(FUENTE_TITULO, 70),
+    "subtitulo": cargar_fuente(FUENTE_TITULO, 36),
+    "texto": cargar_fuente(FUENTE_TEXTO, 26),
+    "chica": cargar_fuente(FUENTE_TEXTO, 18),
 }
-recursos["titulo_juego"] = menu.crear_titulo(cargar_fuente(FUENTE_TITULO_NEGRITA, TITULO_TAMANO, True))
-fuente_menu = cargar_fuente(FUENTE_TEXTO, 42)
+recursos["titulo_juego"] = menu.crear_titulo(cargar_fuente(FUENTE_TITULO, TITULO_TAMANO))
+fuente_menu = cargar_fuente(FUENTE_TEXTO, TAMANO_MENU)
+sombra_izquierda = menu.crear_sombra_izquierda()
 fuente = recursos["texto"]
 
 escena = "menu"     # "menu", "instrucciones", "sonido" o "juego"
@@ -129,9 +130,7 @@ while andando:
                 destino = "menu"
 
         elif escena == "instrucciones":
-            if e.type == pygame.KEYDOWN and e.key in (pygame.K_ESCAPE, pygame.K_RETURN):
-                destino = "menu"
-            elif e.type == pygame.MOUSEBUTTONDOWN:
+            if menu.evento_instrucciones(e, fuente_menu) == "volver":
                 destino = "menu"
 
         elif escena == "juego" and e.type == pygame.KEYDOWN:
@@ -188,7 +187,7 @@ while andando:
                             seleccion_sonido, volumenes)
         dibujar_cursor(pantalla, bosque.brillo_chico, pygame.mouse.get_pos())
     elif escena == "instrucciones":
-        menu.dibujar_instrucciones(pantalla, recursos["subtitulo"], fuente, recursos["chica"])
+        menu.dibujar_instrucciones(pantalla, recursos["titulo"], fuente_menu, recursos["chica"], sombra_izquierda)
         dibujar_cursor(pantalla, bosque.brillo_chico, pygame.mouse.get_pos())
     elif escena == "juego":
         juego.dibujar(pantalla, partida, pos, recursos)

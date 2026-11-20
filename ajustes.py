@@ -96,24 +96,27 @@ PROBABILIDAD_OJOS = 0.003      # ojos que aparecen entre los árboles
 VELOCIDAD_FUNDIDO = 15         # transición a negro: cuánto oscurece por cuadro (de 0 a 255)
 
 # --- Menú ---
-TITULO_JUEGO = "NOCHE DE FANTASMAS"
+TITULO_JUEGO = ["BOSQUE", "ENCANTADO"]   # una línea por elemento
+FRASE_INICIO = ["Protegé al gato mago hasta que", "el bosque vuelva a dormir"]   # abajo a la derecha
 IMAGEN_FONDO_MENU = "img/fondo_completo"   # sin extensión: prueba .png, .jpg y .jpeg
-MENU_X = 70                # todo el menú está alineado a la izquierda, a esta distancia del borde
-TITULO_Y = 60              # borde de arriba del título
-TITULO_TAMANO = 70
+MENU_X = 72                # todo el menú está alineado a la izquierda, a esta distancia del borde
+TITULO_Y = 40              # borde de arriba del título
+TITULO_TAMANO = 120
+TITULO_INTERLINEADO = 112  # distancia entre las dos líneas del título
 TITULO_ANCHO_MAXIMO = ANCHO - 2 * MENU_X   # si el título es más ancho, se achica
-MENU_Y = 250               # altura de la primera opción
-MENU_SEPARACION = 58       # distancia entre opciones
-BARRA_X = MENU_X + 250     # dónde empiezan las barras de volumen
+MENU_Y = 362               # altura de la primera opción
+MENU_SEPARACION = 48       # distancia entre opciones
+TAMANO_MENU = 26           # letra de las opciones
+BARRA_X = MENU_X + 300     # dónde empiezan las barras de volumen
 BARRA_ANCHO = 280
 
 # --- Tipografías ---
-# Bajalas de fonts.google.com y guardalas en la carpeta fuentes/.
-# Si no están, se usa una fuente con serifa de Windows.
-FUENTE_TITULO = "CinzelDecorative-Regular.ttf"
-FUENTE_TITULO_NEGRITA = "CinzelDecorative-Bold.ttf"
-FUENTE_TEXTO = "CormorantGaramond-Medium.ttf"
-FUENTE_RESPALDO = "palatinolinotype,bookantiqua,georgia,timesnewroman"
+# Bajalas de fonts.google.com (Anton y Montserrat) y guardalas en la carpeta fuentes/.
+# Si no están, se usan parecidas que vienen con Windows.
+FUENTE_TITULO = "Anton-Regular.ttf"          # títulos: condensada y gruesa
+FUENTE_TEXTO = "Montserrat-Medium.ttf"       # todo lo demás
+RESPALDO_TITULO = "impact,arialblack"
+RESPALDO_TEXTO = "segoeui,arial"
 
 # --- Paleta "Bosque Espectral" (RGB) ---
 # Regla: el cian es lo único que brilla.
@@ -126,6 +129,7 @@ CIAN = (34, 211, 238)          # #22D3EE  la magia
 CIAN_CLARO = (103, 232, 249)   # #67E8F9
 PLATA = (156, 163, 175)        # #9CA3AF  marcos y bordes
 BLANCO_AZULADO = (203, 213, 225)   # #CBD5E1  textos
+BLANCO = (240, 250, 255)           # letras del título y del menú
 
 # Nombres que usa el resto del código
 COLOR_TRAZO = CIAN_CLARO
