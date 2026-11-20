@@ -39,6 +39,25 @@ CIRCULO_RADIO_Y = 40
 CANTIDAD_PIEDRAS = 9
 ALTO_PIEDRA = 50
 
+# --- Mover al gato con la cabeza (durante el Espíritu del Piso) ---
+SENSIBILIDAD_CABEZA = 2.2  # la cabeza se mueve poco: el gato se mueve 2,2 veces más
+MARGEN_GATO = 90           # el gato no puede acercarse más que esto a los bordes
+SUAVIDAD_GATO = 0.25       # 1 = salta directo a donde está la cabeza; menos = se desliza
+CARA_TAMANO_MINIMO = 30    # caras más chicas que esto (en la imagen achicada) se ignoran
+
+# --- Espíritu del Piso: sale del suelo y ataca; hay que esquivar ---
+ESPIRITU_PRIMERA_VEZ = 360     # cuadros desde que empieza el nivel hasta que aparece (12 s)
+ESPIRITU_CADA = 750            # cuadros entre una aparición y la siguiente (25 s)
+ESPIRITU_SUBIR = 75            # cuadros que tarda en subir (y en bajar)
+ESPIRITU_PAUSA = 30            # cuadros entre un ataque y el siguiente
+ESPIRITU_AVISO = 40            # cuadros que se ve la marca antes del golpe
+ESPIRITU_GOLPE = 18            # cuadros que dura la garra afuera
+ESPIRITU_ANCHO_GOLPE = 110     # ancho de la zona que golpea
+ESPIRITU_ALTO_GOLPE = 300
+ESPIRITU_RADIO = 130           # tamaño del gigante
+SUELO_Y = GATO_Y + 60          # la línea del suelo, donde salen los golpes
+PUNTOS_ESPIRITU = 50           # por sobrevivir a todos los ataques
+
 # --- Fantasmas ---
 SIMBOLOS = ["—", "|", "V", "Λ"]
 RADIO_FANTASMA = 28
@@ -70,6 +89,7 @@ NIVELES = [
         "fantasmas": 8,
         "velocidad": 1.2,
         "espera": 75,
+        "ataques_piso": 0,     # 0 = el Espíritu del Piso no aparece en este nivel
         "novedades": ["Dibujá el sigilo de cada espíritu para espantarlo."],
     },
     {
@@ -77,6 +97,7 @@ NIVELES = [
         "fantasmas": 10,
         "velocidad": 1.6,
         "espera": 65,
+        "ataques_piso": 0,
         "novedades": ["Los espíritus se mueven más rápido."],
     },
     {
@@ -84,13 +105,16 @@ NIVELES = [
         "fantasmas": 12,
         "velocidad": 2.0,
         "espera": 55,
-        "novedades": ["Vienen más espíritus, y más seguido."],
+        "ataques_piso": 3,
+        "novedades": ["Del piso sale un espíritu gigante y te ataca.",
+                      "Mové la cabeza a los costados para esquivar sus golpes."],
     },
     {
         "nombre": "Luna de huesos",
         "fantasmas": 14,
         "velocidad": 2.3,
         "espera": 48,
+        "ataques_piso": 4,
         "novedades": ["La noche se pone más oscura."],
     },
     {
@@ -98,6 +122,7 @@ NIVELES = [
         "fantasmas": 16,
         "velocidad": 2.6,
         "espera": 42,
+        "ataques_piso": 5,
         "novedades": ["Lo que duerme bajo el bosque está despertando."],
     },
 ]

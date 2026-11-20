@@ -46,6 +46,7 @@ sonidos = {
     "dano": pygame.mixer.Sound("sonidos/dano.wav"),
     "fin": pygame.mixer.Sound("sonidos/fin.wav"),
     "nivel": pygame.mixer.Sound("sonidos/nivel.wav"),
+    "temblor": pygame.mixer.Sound("sonidos/temblor.wav"),
 }
 volumenes = {"musica": VOLUMEN_MUSICA_INICIAL, "efectos": VOLUMEN_EFECTOS_INICIAL}
 menu.aplicar_volumen(sonidos.values(), volumenes["efectos"])
@@ -225,7 +226,10 @@ while andando:
     # --- Cámara ---
     frame = vision.leer_cuadro(cap)
     if frame is not None and escena == "juego":
-        pos = vision.detectar_mano(frame)
+        if juego.usa_cabeza(partida):
+            pos = vision.detectar_cara(frame)      # esquivando: se mueve con la cabeza
+        else:
+            pos = vision.detectar_mano(frame)      # dibujando: la mano
     else:
         pos = None
 
@@ -247,15 +251,18 @@ while andando:
     if en_partida:
         if cielo is not None and piso is not None:
             pantalla.blit(cielo, (0, 0))                        # el cielo, pegado arriba
+            juego.dibujar_gigante(pantalla, partida, recursos)  # asoma detrás del piso
             pantalla.blit(piso, (0, ALTO - piso.get_height()))  # el piso, pegado abajo
             bosque.dibujar_fuegos(pantalla)
-            bosque.dibujar_gato(pantalla)
+            bosque.dibujar_gato(pantalla, partida["gato_x"])
         else:
             bosque.dibujar_fondo(pantalla)
+            juego.dibujar_gigante(pantalla, partida, recursos)
             bosque.dibujar_piedras(pantalla, False)
-            bosque.dibujar_gato(pantalla)
+            bosque.dibujar_gato(pantalla, partida["gato_x"])
             bosque.dibujar_piedras(pantalla, True)
             bosque.dibujar_frente(pantalla)
+        juego.dibujar_ataque(pantalla, partida, recursos)      # la marca y la garra, encima del gato
         juego.dibujar_fantasmas(pantalla, partida, recursos)   # los fantasmas, arriba de todo
         juego.dibujar_interfaz(pantalla, partida, pos, recursos, completa=(escena == "juego"))
         if escena == "juego" and frame is not None:

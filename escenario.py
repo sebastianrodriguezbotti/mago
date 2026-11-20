@@ -420,9 +420,10 @@ class Bosque:
             dibujar_brillo(pantalla, self.brillo_chico, (cx, cy), 0.3 + 0.7 * k)
             dibujar_sigilo(pantalla, p["sigilo"], cx, cy, 6, mezclar(NOCHE_3, CIAN_CLARO, 0.3 + 0.7 * k))
 
-    def dibujar_gato(self, pantalla):
-        """El gato es una silueta negra; solo le brillan los ojos y la punta del sombrero."""
-        x = GATO_X
+    def dibujar_gato(self, pantalla, x=GATO_X):
+        """El gato es una silueta negra; solo le brillan los ojos y la punta del sombrero.
+        x es dónde está: se mueve durante el Espíritu del Piso."""
+        x = int(x)
         y = GATO_Y
         # cola
         pygame.draw.arc(pantalla, COLOR_GATO, (x + 15, y + 5, 60, 55), -1.2, 1.6, 7)

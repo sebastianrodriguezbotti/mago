@@ -7,10 +7,13 @@ import cv2
 import mediapipe as mp
 from ajustes import (CAMARA_INDICE, ANCHO, ALTO, COLOR_MIN, COLOR_MAX,
                      AREA_MINIMA, PROPORCION_PELLIZCO,
-                     ESPEJO_ANCHO, ESPEJO_ALTO)
+                     ESPEJO_ANCHO, ESPEJO_ALTO, CARA_TAMANO_MINIMO)
 
 # Lo que se prepara una sola vez, al hacer import vision
 manos = mp.solutions.hands.Hands(max_num_hands=1)
+caras = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+if caras.empty():
+    print("No se pudo cargar el detector de caras de OpenCV (haarcascade_frontalface_default.xml)")
 
 
 def abrir_camara():
@@ -74,6 +77,20 @@ def detectar_mano(frame):
     x = (pulgar[0] + indice[0]) // 2
     y = (pulgar[1] + indice[1]) // 2
     return (x, y)
+
+
+def detectar_cara(frame):
+    """Busca la cara más grande (con Haar, como en clase).
+    Devuelve (x, y), el centro de la cara en la ventana, o None si no hay cara."""
+    # se busca en una imagen 3 veces más chica: es mucho más rápido
+    chico = cv2.resize(frame, (frame.shape[1] // 3, frame.shape[0] // 3))
+    gris = cv2.cvtColor(chico, cv2.COLOR_BGR2GRAY)
+    encontradas = caras.detectMultiScale(gris, scaleFactor=1.2, minNeighbors=5,
+                                         minSize=(CARA_TAMANO_MINIMO, CARA_TAMANO_MINIMO))
+    if len(encontradas) == 0:
+        return None
+    x, y, w, h = max(encontradas, key=lambda c: c[2] * c[3])   # la más grande: la más cercana
+    return ((x + w // 2) * 3, (y + h // 2) * 3)
 
 
 def detectar_color(frame):

@@ -428,6 +428,7 @@ def dibujar_instrucciones(pantalla, fuente_titulo, fuente, fuente_chica, sombra)
         "Separá los dedos para lanzar el hechizo:",
         "se desvanecen todos los espíritus con ese sigilo.",
         "Si uno toca al gato, perdés una vida. Tenés tres.",
+        "Desde el nivel 3 sale un gigante del piso: mové la cabeza para esquivarlo.",
     ]
     for i in range(len(lineas)):
         escribir(pantalla, fuente_chica, lineas[i], BLANCO, (MENU_X, y + 34 + i * 26), "midleft")

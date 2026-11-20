@@ -7,6 +7,7 @@ import random
 import pygame
 import menu
 from fantasma import Fantasma
+from espiritu_piso import EspirituDelPiso
 from hechizos import reconocer_simbolo
 from escenario import dibujar_trazo, dibujar_cursor, dibujar_brillo
 from ajustes import *
@@ -30,6 +31,10 @@ def nueva_partida(nivel_inicio=0):
         "sin_varita": 0,      # cuadros seguidos sin pellizco
         "inicio": nivel_inicio,   # para "jugar de nuevo" desde el mismo nivel
         "completado": None,   # cuando se supera un nivel, queda su número hasta que main lo guarda
+        "gato_x": GATO_X,     # el gato se mueve solo durante el Espíritu del Piso
+        "espiritu": None,     # el Espíritu del Piso, cuando está afuera
+        "hasta_espiritu": 0,  # cuadros hasta que salga el próximo
+        "sin_cara": 0,        # cuadros seguidos sin ver la cara
     }
     empezar_nivel(partida, nivel_inicio)
     return partida
@@ -48,12 +53,32 @@ def empezar_nivel(partida, numero):
     partida["estado"] = "cartel"
     partida["cartel"] = CUADROS_CARTEL
     partida["trazo"] = []
+    partida["espiritu"] = None
+    partida["hasta_espiritu"] = ESPIRITU_PRIMERA_VEZ
 
 
 def saltar_cartel(partida):
     """Si se está mostrando el cartel, lo termina ya."""
     if partida["estado"] == "cartel":
         partida["cartel"] = 0
+
+
+def usa_cabeza(partida):
+    """Devuelve True si ahora la cámara tiene que buscar la cara (para esquivar)
+    en vez de la mano (para dibujar)."""
+    return partida["espiritu"] is not None and partida["estado"] == "jugando"
+
+
+def mover_gato(partida, cara):
+    """Mueve el gato hacia donde apunta la cabeza. Si no se ve la cara, se queda quieto."""
+    if cara is None:
+        partida["sin_cara"] += 1
+        return
+    partida["sin_cara"] = 0
+    # la cabeza se mueve poco: se exagera la distancia al centro
+    objetivo = ANCHO / 2 + (cara[0] - ANCHO / 2) * SENSIBILIDAD_CABEZA
+    objetivo = max(MARGEN_GATO, min(ANCHO - MARGEN_GATO, objetivo))
+    partida["gato_x"] += (objetivo - partida["gato_x"]) * SUAVIDAD_GATO
 
 
 def crear_fantasma(nivel):
@@ -97,52 +122,79 @@ def actualizar(partida, pos):
 
     nivel = datos_nivel(partida)
 
-    # 1. La mano: sumar puntos al trazo, o terminarlo y lanzar el hechizo
-    if pos is not None:
-        partida["trazo"].append(pos)
-        partida["sin_varita"] = 0
-    else:
-        partida["sin_varita"] += 1
-        if partida["sin_varita"] == CUADROS_SIN_VARITA and len(partida["trazo"]) > 0:
-            simbolo = reconocer_simbolo(partida["trazo"])
-            partida["trazo"] = []
-            if simbolo is not None:
-                antes = len(partida["fantasmas"])
-                partida["fantasmas"] = lanzar_hechizo(partida["fantasmas"], simbolo)
-                eliminados = antes - len(partida["fantasmas"])
-                if eliminados > 0:
-                    partida["puntos"] += eliminados * PUNTOS_POR_FANTASMA
-                    sonidos.append("hechizo")
-                else:
-                    sonidos.append("fallo")
-            else:
-                sonidos.append("fallo")
-
-    # 2. Aparecen fantasmas nuevos
-    if partida["por_salir"] > 0:
-        partida["espera"] -= 1
-        if partida["espera"] <= 0:
-            partida["fantasmas"].append(crear_fantasma(nivel))
-            partida["por_salir"] -= 1
-            partida["espera"] = nivel["espera"]
-
-    # 3. Los fantasmas se mueven; si llegan al gato, se pierde una vida
-    for f in partida["fantasmas"]:
-        f.mover()
-    quedan = []
-    for f in partida["fantasmas"]:
-        if f.choca_con_gato():
+    if partida["espiritu"] is not None:
+        # --- Espíritu del Piso: los fantasmas se quedan quietos y hay que esquivar ---
+        mover_gato(partida, pos)
+        resultado = partida["espiritu"].actualizar(partida["gato_x"])
+        if resultado == "dano":
             partida["vidas"] -= 1
             sonidos.append("dano")
-        else:
-            quedan.append(f)
-    partida["fantasmas"] = quedan
+        elif resultado == "golpe":
+            sonidos.append("fallo")
+        if partida["espiritu"].fase == "terminado":
+            partida["espiritu"] = None
+            partida["puntos"] += PUNTOS_ESPIRITU
+            partida["hasta_espiritu"] = ESPIRITU_CADA
+            sonidos.append("hechizo")
+    else:
+        # el gato vuelve despacio al centro del círculo
+        partida["gato_x"] += (GATO_X - partida["gato_x"]) * 0.1
 
-    # 4. ¿Perdiste, o terminó el nivel?
+        # 1. La mano: sumar puntos al trazo, o terminarlo y lanzar el hechizo
+        if pos is not None:
+            partida["trazo"].append(pos)
+            partida["sin_varita"] = 0
+        else:
+            partida["sin_varita"] += 1
+            if partida["sin_varita"] == CUADROS_SIN_VARITA and len(partida["trazo"]) > 0:
+                simbolo = reconocer_simbolo(partida["trazo"])
+                partida["trazo"] = []
+                if simbolo is not None:
+                    antes = len(partida["fantasmas"])
+                    partida["fantasmas"] = lanzar_hechizo(partida["fantasmas"], simbolo)
+                    eliminados = antes - len(partida["fantasmas"])
+                    if eliminados > 0:
+                        partida["puntos"] += eliminados * PUNTOS_POR_FANTASMA
+                        sonidos.append("hechizo")
+                    else:
+                        sonidos.append("fallo")
+                else:
+                    sonidos.append("fallo")
+
+        # 2. Aparecen fantasmas nuevos
+        if partida["por_salir"] > 0:
+            partida["espera"] -= 1
+            if partida["espera"] <= 0:
+                partida["fantasmas"].append(crear_fantasma(nivel))
+                partida["por_salir"] -= 1
+                partida["espera"] = nivel["espera"]
+
+        # 3. Los fantasmas se mueven; si llegan al gato, se pierde una vida
+        for f in partida["fantasmas"]:
+            f.mover()
+        quedan = []
+        for f in partida["fantasmas"]:
+            if f.choca_con_gato():
+                partida["vidas"] -= 1
+                sonidos.append("dano")
+            else:
+                quedan.append(f)
+        partida["fantasmas"] = quedan
+
+        # 4. ¿Le toca salir al Espíritu del Piso?
+        if nivel["ataques_piso"] > 0:
+            partida["hasta_espiritu"] -= 1
+            if partida["hasta_espiritu"] <= 0:
+                partida["espiritu"] = EspirituDelPiso(nivel["ataques_piso"])
+                partida["trazo"] = []
+                partida["sin_cara"] = 0
+                sonidos.append("temblor")
+
+    # 5. ¿Perdiste, o terminó el nivel?
     if partida["vidas"] <= 0:
         partida["estado"] = "perdiste"
         sonidos.append("fin")
-    elif partida["por_salir"] == 0 and len(partida["fantasmas"]) == 0:
+    elif partida["por_salir"] == 0 and len(partida["fantasmas"]) == 0 and partida["espiritu"] is None:
         partida["completado"] = partida["nivel"]
         sonidos.append("nivel")
         if partida["nivel"] == len(NIVELES) - 1:
@@ -155,6 +207,18 @@ def actualizar(partida, pos):
 
 
 # ---------- Dibujo ----------
+
+def dibujar_gigante(pantalla, partida, r):
+    """El Espíritu del Piso asomando. Va entre el cielo y el piso."""
+    if partida["espiritu"] is not None:
+        partida["espiritu"].dibujar_gigante(pantalla, r["bosque"].brillo_fuego)
+
+
+def dibujar_ataque(pantalla, partida, r):
+    """La marca y la garra del Espíritu del Piso. Va encima del gato."""
+    if partida["espiritu"] is not None:
+        partida["espiritu"].dibujar_ataque(pantalla, r["bosque"].brillo_fuego)
+
 
 def dibujar_fantasmas(pantalla, partida, r):
     """Dibuja los fantasmas. r es un diccionario con los recursos: fuentes, bosque, sprite, velo."""
@@ -171,12 +235,20 @@ def dibujar_interfaz(pantalla, partida, pos, r, completa=True):
         return
 
     dibujar_trazo(pantalla, partida["trazo"])
-    if pos is not None:
+    if pos is not None and not usa_cabeza(partida):
         dibujar_cursor(pantalla, bosque.brillo_chico, pos)
 
     dibujar_indicadores(pantalla, partida, r)
 
-    if partida["estado"] == "jugando" and partida["sin_varita"] > CUADROS_AVISO:
+    espiritu = partida["espiritu"]
+    if espiritu is not None and partida["estado"] == "jugando":
+        if partida["sin_cara"] > 30:
+            menu.escribir_brillante(pantalla, r["texto"], "No veo tu cara: ponete frente a la cámara",
+                                    (ANCHO // 2, 130))
+        elif espiritu.fase == "subiendo":
+            menu.escribir_brillante(pantalla, r["texto"], "¡Algo sube del piso! Mové la cabeza para esquivar",
+                                    (ANCHO // 2, 130))
+    elif partida["estado"] == "jugando" and partida["sin_varita"] > CUADROS_AVISO:
         menu.escribir(pantalla, r["chica"], "Juntá el índice y el pulgar para dibujar",
                       COLOR_AVISO, (ANCHO // 2, ALTO // 2 - 60))
 
