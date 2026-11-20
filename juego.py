@@ -14,8 +14,9 @@ from ajustes import *
 
 # ---------- Reglas ----------
 
-def nueva_partida():
-    """Devuelve un diccionario con todo lo que cambia durante una partida."""
+def nueva_partida(nivel_inicio=0):
+    """Devuelve un diccionario con todo lo que cambia durante una partida,
+    empezando en el nivel nivel_inicio (0 es el primero)."""
     partida = {
         "fantasmas": [],
         "puntos": 0,
@@ -27,8 +28,10 @@ def nueva_partida():
         "cartel": 0,          # cuadros que le quedan al cartel del nivel
         "trazo": [],          # puntos que se están dibujando con la mano
         "sin_varita": 0,      # cuadros seguidos sin pellizco
+        "inicio": nivel_inicio,   # para "jugar de nuevo" desde el mismo nivel
+        "completado": None,   # cuando se supera un nivel, queda su número hasta que main lo guarda
     }
-    empezar_nivel(partida, 0)
+    empezar_nivel(partida, nivel_inicio)
     return partida
 
 
@@ -140,6 +143,8 @@ def actualizar(partida, pos):
         partida["estado"] = "perdiste"
         sonidos.append("fin")
     elif partida["por_salir"] == 0 and len(partida["fantasmas"]) == 0:
+        partida["completado"] = partida["nivel"]
+        sonidos.append("nivel")
         if partida["nivel"] == len(NIVELES) - 1:
             partida["estado"] = "ganaste"
             sonidos.append("fin")

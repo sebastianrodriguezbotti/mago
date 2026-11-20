@@ -7,6 +7,7 @@ import pygame
 import vision
 import menu
 import juego
+import progreso
 from fantasma import crear_sprite_fantasma
 import os
 from escenario import Bosque, cargar_fuente, cargar_imagen_fondo, dibujar_cursor, mezclar
@@ -44,6 +45,7 @@ sonidos = {
     "fallo": pygame.mixer.Sound("sonidos/fallo.wav"),
     "dano": pygame.mixer.Sound("sonidos/dano.wav"),
     "fin": pygame.mixer.Sound("sonidos/fin.wav"),
+    "nivel": pygame.mixer.Sound("sonidos/nivel.wav"),
 }
 volumenes = {"musica": VOLUMEN_MUSICA_INICIAL, "efectos": VOLUMEN_EFECTOS_INICIAL}
 menu.aplicar_volumen(sonidos.values(), volumenes["efectos"])
@@ -65,8 +67,8 @@ if cap is None:
 bosque = Bosque()
 # imágenes: si alguna no está, queda None y se usa el bosque dibujado
 fondo_menu = cargar_imagen_fondo(IMAGEN_FONDO_MENU)
-fondo_juego = cargar_imagen_fondo(IMAGEN_FONDO_JUEGO)                    # capa de atrás
-frente_juego = cargar_imagen_fondo(IMAGEN_FRENTE_JUEGO, transparente=True)   # capa de adelante
+cielo = cargar_imagen_fondo(IMAGEN_CIELO, capa=True)    # atrás, pegado arriba
+piso = cargar_imagen_fondo(IMAGEN_PISO, capa=True)      # encima del cielo, pegado abajo
 
 # velos oscuros: para los carteles y para los fundidos a negro
 velo = pygame.Surface((ANCHO, ALTO), pygame.SRCALPHA)
@@ -83,14 +85,18 @@ recursos = {
     "subtitulo": cargar_fuente(FUENTE_TITULO, 36),
     "texto": cargar_fuente(FUENTE_TEXTO, 26),
     "chica": cargar_fuente(FUENTE_TEXTO, 18),
+    "numero": cargar_fuente(FUENTE_TITULO, 80),
 }
 recursos["titulo_juego"] = menu.crear_titulo(cargar_fuente(FUENTE_TITULO, TITULO_TAMANO))
 fuente_menu = cargar_fuente(FUENTE_TEXTO, TAMANO_MENU)
 sombra_izquierda = menu.crear_sombra_izquierda()
 fuente = recursos["texto"]
 
-escena = "menu"     # "menu", "instrucciones", "sonido", "juego" o "pausa"
-volver_a = "menu"   # a dónde vuelven "Cómo jugar" y "Música y sonido": al inicio o a la pausa
+escena = "menu"     # "menu", "niveles", "instrucciones", "sonido", "juego" o "pausa"
+volver_a = "menu"   # a dónde vuelven "Niveles", "Cómo jugar" y "Música y sonido": al inicio o a la pausa
+desbloqueados = progreso.cargar_progreso()   # cuántos niveles se pueden jugar
+nivel_elegido = 0   # en qué nivel empieza la próxima partida
+seleccion_niveles = 0   # tarjeta marcada en "Niveles" (la última es VOLVER)
 seleccion = 0       # opción marcada en el menú
 seleccion_sonido = 0  # opción marcada en "Música y sonido"
 seleccion_pausa = 0   # opción marcada en la pausa
@@ -116,7 +122,12 @@ while andando:
         if escena == "menu":
             seleccion, eleccion = menu.evento_menu(e, fuente_menu, seleccion)
             if eleccion == "Jugar":
+                nivel_elegido = desbloqueados - 1     # sigue desde el último nivel desbloqueado
                 destino = "juego"
+            elif eleccion == "Niveles":
+                destino = "niveles"
+                volver_a = "menu"
+                seleccion_niveles = desbloqueados - 1
             elif eleccion == "Cómo jugar":
                 destino = "instrucciones"
                 volver_a = "menu"
@@ -134,6 +145,10 @@ while andando:
             if eleccion == "Continuar":
                 escena = "juego"
                 volver_a = "menu"
+            elif eleccion == "Niveles":
+                escena = "niveles"
+                volver_a = "pausa"
+                seleccion_niveles = partida["nivel"]
             elif eleccion == "Cómo jugar":
                 escena = "instrucciones"
                 volver_a = "pausa"
@@ -158,6 +173,19 @@ while andando:
                 else:
                     destino = "menu"
 
+        elif escena == "niveles":
+            seleccion_niveles, que_paso = menu.evento_niveles(e, fuente_menu, seleccion_niveles, desbloqueados)
+            if que_paso == "jugar":
+                nivel_elegido = seleccion_niveles
+                destino = "juego"
+            elif que_paso == "bloqueado":
+                sonidos["fallo"].play()
+            elif que_paso == "volver":
+                if volver_a == "pausa":
+                    escena = "pausa"
+                else:
+                    destino = "menu"
+
         elif escena == "instrucciones":
             if menu.evento_instrucciones(e, fuente_menu) == "volver":
                 if volver_a == "pausa":
@@ -175,6 +203,7 @@ while andando:
             elif e.key == pygame.K_RETURN:
                 juego.saltar_cartel(partida)
             elif e.key == pygame.K_r and partida["estado"] in ("perdiste", "ganaste"):
+                nivel_elegido = partida["inicio"]    # de nuevo desde el mismo nivel
                 destino = "juego"
 
     # --- Fundido a negro entre escenas ---
@@ -185,8 +214,8 @@ while andando:
             if destino == "salir":
                 andando = False
             elif destino == "juego":
-                partida = juego.nueva_partida()
-            if destino == "menu":
+                partida = juego.nueva_partida(nivel_elegido)
+            if destino in ("menu", "juego"):
                 volver_a = "menu"
             escena = destino
             destino = None
@@ -205,6 +234,10 @@ while andando:
     if escena == "juego":
         for nombre in juego.actualizar(partida, pos):
             sonidos[nombre].play()
+        if partida["completado"] is not None:
+            # se superó un nivel: se desbloquea el siguiente y se guarda en el archivo
+            desbloqueados = progreso.desbloquear(desbloqueados, partida["completado"])
+            partida["completado"] = None
 
     # --- Dibujar ---
     # de atrás hacia adelante: lo que se dibuja después queda encima.
@@ -212,8 +245,9 @@ while andando:
     en_partida = escena in ("juego", "pausa") or volver_a == "pausa"
 
     if en_partida:
-        if fondo_juego is not None:
-            pantalla.blit(fondo_juego, (0, 0))      # capa de atrás
+        if cielo is not None and piso is not None:
+            pantalla.blit(cielo, (0, 0))                        # el cielo, pegado arriba
+            pantalla.blit(piso, (0, ALTO - piso.get_height()))  # el piso, pegado abajo
             bosque.dibujar_fuegos(pantalla)
             bosque.dibujar_gato(pantalla)
         else:
@@ -221,11 +255,8 @@ while andando:
             bosque.dibujar_piedras(pantalla, False)
             bosque.dibujar_gato(pantalla)
             bosque.dibujar_piedras(pantalla, True)
-        juego.dibujar_fantasmas(pantalla, partida, recursos)
-        if frente_juego is not None:
-            pantalla.blit(frente_juego, (0, 0))     # capa de adelante
-        else:
             bosque.dibujar_frente(pantalla)
+        juego.dibujar_fantasmas(pantalla, partida, recursos)   # los fantasmas, arriba de todo
         juego.dibujar_interfaz(pantalla, partida, pos, recursos, completa=(escena == "juego"))
         if escena == "juego" and frame is not None:
             dibujar_espejo(pantalla, frame, pos)
@@ -242,6 +273,9 @@ while andando:
 
     if escena == "menu":
         menu.dibujar_menu(pantalla, recursos["titulo_juego"], fuente_menu, recursos["chica"], seleccion)
+    elif escena == "niveles":
+        menu.dibujar_niveles(pantalla, recursos["titulo"], recursos["numero"], fuente_menu, recursos["chica"],
+                             seleccion_niveles, desbloqueados)
     elif escena == "pausa":
         menu.dibujar_pausa(pantalla, recursos["titulo"], fuente_menu, seleccion_pausa)
     elif escena == "sonido":

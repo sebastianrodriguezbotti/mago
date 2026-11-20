@@ -33,17 +33,20 @@ def cargar_fuente(archivo, tamano):
     return pygame.font.SysFont(RESPALDO_TEXTO, tamano)
 
 
-def cargar_imagen_fondo(ruta_sin_extension, transparente=False):
-    """Carga la imagen y la estira al tamaño de la ventana. Devuelve None si no existe.
-    transparente=True respeta las partes transparentes del PNG (para la capa de adelante)."""
+def cargar_imagen_fondo(ruta_sin_extension, capa=False):
+    """Carga una imagen de fondo. Devuelve None si no existe.
+    Normal: la estira al tamaño de la ventana.
+    capa=True: respeta las partes transparentes del PNG y la lleva al ancho de la
+    ventana sin deformarla (el alto cambia en la misma proporción)."""
     for extension in (".png", ".jpg", ".jpeg"):
         ruta = ruta_sin_extension + extension
         if os.path.exists(ruta):
-            if transparente:
-                imagen = pygame.image.load(ruta).convert_alpha()
-            else:
+            if not capa:
                 imagen = pygame.image.load(ruta).convert()
-            return pygame.transform.smoothscale(imagen, (ANCHO, ALTO))
+                return pygame.transform.smoothscale(imagen, (ANCHO, ALTO))
+            imagen = pygame.image.load(ruta).convert_alpha()
+            alto = int(imagen.get_height() * ANCHO / imagen.get_width())
+            return pygame.transform.smoothscale(imagen, (ANCHO, alto))
     print("No encontré la imagen", ruta_sin_extension, "- uso el bosque dibujado")
     return None
 

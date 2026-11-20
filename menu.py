@@ -7,9 +7,10 @@ from escenario import mezclar
 from fantasma import dibujar_simbolo
 from ajustes import *
 
-OPCIONES = ["Jugar", "Cómo jugar", "Música y sonido", "Salir"]
+OPCIONES = ["Jugar", "Niveles", "Cómo jugar", "Música y sonido", "Salir"]
 OPCIONES_SONIDO = ["Música", "Efectos", "Volver"]
-OPCIONES_PAUSA = ["Continuar", "Cómo jugar", "Música y sonido", "Volver al inicio", "Salir del juego"]
+OPCIONES_PAUSA = ["Continuar", "Niveles", "Cómo jugar", "Música y sonido",
+                  "Volver al inicio", "Salir del juego"]
 
 
 # ---------- Texto ----------
@@ -122,6 +123,13 @@ def volumen_desde_mouse(x):
 
 # ---------- Posición de las opciones (todas alineadas a la izquierda) ----------
 
+def y_inicio(lista):
+    """Devuelve la altura de la primera opción de la lista. La pausa empieza más arriba."""
+    if lista is OPCIONES_PAUSA:
+        return PAUSA_Y
+    return MENU_Y
+
+
 def rect_opcion(fuente, lista, i):
     """Devuelve el rectángulo que ocupa la opción i de la lista en la pantalla."""
     if lista is OPCIONES_SONIDO and lista[i] != "Volver":
@@ -129,7 +137,7 @@ def rect_opcion(fuente, lista, i):
     else:
         ancho = fuente.size(lista[i].upper())[0]
     alto = fuente.get_height()
-    return pygame.Rect(MENU_X - 30, MENU_Y + i * MENU_SEPARACION - alto // 2, ancho + 60, alto)
+    return pygame.Rect(MENU_X - 30, y_inicio(lista) + i * MENU_SEPARACION - alto // 2, ancho + 60, alto)
 
 
 def opcion_bajo_mouse(fuente, lista, pos):
@@ -223,6 +231,115 @@ def rect_volver_instrucciones(fuente):
     return pygame.Rect(MENU_X - 30, ALTO - 60 - alto // 2, ancho + 60, alto)
 
 
+# ---------- Pantalla de niveles ----------
+# La selección va de 0 a 4 (las tarjetas) y 5 es el botón VOLVER.
+
+def rect_tarjeta(i):
+    """Devuelve el rectángulo de la tarjeta del nivel i."""
+    total = len(NIVELES) * TARJETA_ANCHO + (len(NIVELES) - 1) * TARJETA_SEPARACION
+    x = (ANCHO - total) // 2 + i * (TARJETA_ANCHO + TARJETA_SEPARACION)
+    return pygame.Rect(x, TARJETAS_Y, TARJETA_ANCHO, TARJETA_ALTO)
+
+
+def evento_niveles(e, fuente, seleccion, desbloqueados):
+    """Recibe un evento en la pantalla de niveles.
+    Devuelve (seleccion, que_paso): que_paso es "jugar", "bloqueado", "volver" o None.
+    Con "jugar", el nivel elegido es seleccion."""
+    volver = len(NIVELES)          # el número que corresponde al botón VOLVER
+    elegir = False
+    que_paso = None
+    if e.type in (pygame.MOUSEMOTION, pygame.MOUSEBUTTONDOWN):
+        debajo = None
+        for i in range(len(NIVELES)):
+            if rect_tarjeta(i).collidepoint(e.pos):
+                debajo = i
+        if rect_volver_instrucciones(fuente).collidepoint(e.pos):
+            debajo = volver
+        if debajo is not None:
+            seleccion = debajo
+            if e.type == pygame.MOUSEBUTTONDOWN and e.button == 1:
+                elegir = True
+    elif e.type == pygame.KEYDOWN:
+        if e.key == pygame.K_ESCAPE:
+            que_paso = "volver"
+        elif e.key == pygame.K_LEFT and seleccion < volver:
+            seleccion = (seleccion - 1) % len(NIVELES)
+        elif e.key == pygame.K_RIGHT and seleccion < volver:
+            seleccion = (seleccion + 1) % len(NIVELES)
+        elif e.key == pygame.K_DOWN:
+            seleccion = volver
+        elif e.key == pygame.K_UP and seleccion == volver:
+            seleccion = desbloqueados - 1
+        elif e.key == pygame.K_RETURN:
+            elegir = True
+
+    if elegir:
+        if seleccion == volver:
+            que_paso = "volver"
+        elif seleccion < desbloqueados:
+            que_paso = "jugar"
+        else:
+            que_paso = "bloqueado"
+    return seleccion, que_paso
+
+
+def dibujar_candado(pantalla, cx, cy, color):
+    """Un candado hecho con formas: el arco de arriba, el cuerpo y el ojo de la llave."""
+    pygame.draw.circle(pantalla, color, (cx, cy - 10), 13, 4, draw_top_left=True, draw_top_right=True)
+    pygame.draw.line(pantalla, color, (cx - 12, cy - 10), (cx - 12, cy - 2), 4)
+    pygame.draw.line(pantalla, color, (cx + 11, cy - 10), (cx + 11, cy - 2), 4)
+    pygame.draw.rect(pantalla, color, (cx - 19, cy - 2, 38, 30), border_radius=5)
+    pygame.draw.circle(pantalla, NOCHE_1, (cx, cy + 10), 4)
+    pygame.draw.line(pantalla, NOCHE_1, (cx, cy + 10), (cx, cy + 19), 3)
+
+
+def dibujar_niveles(pantalla, fuente_titulo, fuente_numero, fuente, fuente_chica, seleccion, desbloqueados):
+    escribir(pantalla, fuente_titulo, "NIVELES", BLANCO, (MENU_X, 110), "midleft")
+
+    for i in range(len(NIVELES)):
+        rect = rect_tarjeta(i)
+        abierto = i < desbloqueados
+        elegida = i == seleccion
+
+        fondo = pygame.Surface(rect.size, pygame.SRCALPHA)
+        fondo.fill((*NOCHE_1, 190))
+        pantalla.blit(fondo, rect.topleft)
+        if elegida:
+            pygame.draw.rect(pantalla, CIAN, rect, 2)
+            # el rombo celeste, arriba de la tarjeta elegida
+            cx = rect.centerx
+            pygame.draw.polygon(pantalla, CIAN, [(cx, rect.top - 22), (cx + 7, rect.top - 15),
+                                                 (cx, rect.top - 8), (cx - 7, rect.top - 15)])
+        else:
+            pygame.draw.rect(pantalla, mezclar(NOCHE_1, PLATA, 0.6), rect, 1)
+
+        if abierto:
+            if elegida:
+                escribir_brillante(pantalla, fuente_numero, str(i + 1), (rect.centerx, rect.top + 70))
+            else:
+                escribir(pantalla, fuente_numero, str(i + 1), BLANCO, (rect.centerx, rect.top + 70))
+            # el nombre, en dos renglones si es largo
+            palabras = NIVELES[i]["nombre"].upper().split()
+            mitad = (len(palabras) + 1) // 2
+            renglones = [" ".join(palabras[:mitad]), " ".join(palabras[mitad:])]
+            for j in range(len(renglones)):
+                escribir(pantalla, fuente_chica, renglones[j], BLANCO, (rect.centerx, rect.top + 135 + j * 22))
+        else:
+            gris = mezclar(NOCHE_1, PLATA, 0.45)
+            escribir(pantalla, fuente_numero, str(i + 1), gris, (rect.centerx, rect.top + 70))
+            dibujar_candado(pantalla, rect.centerx, rect.top + 135, PLATA if elegida else gris)
+
+    # debajo de las tarjetas: qué pasa con la elegida
+    if seleccion < len(NIVELES):
+        if seleccion < desbloqueados:
+            texto = "Enter o clic para jugar este nivel"
+        else:
+            texto = f"Superá el nivel {seleccion} para desbloquearlo"
+        escribir(pantalla, fuente_chica, texto, PLATA, (ANCHO // 2, TARJETAS_Y + TARJETA_ALTO + 40))
+
+    dibujar_opcion(pantalla, fuente, "Volver", ALTO - 60, seleccion == len(NIVELES))
+
+
 # ---------- Pantallas ----------
 
 def dibujar_opcion(pantalla, fuente, texto, y, elegida):
@@ -250,9 +367,9 @@ def dibujar_menu(pantalla, titulo, fuente, fuente_chica, seleccion):
 
 
 def dibujar_pausa(pantalla, fuente_titulo, fuente, seleccion):
-    escribir(pantalla, fuente_titulo, "PAUSA", BLANCO, (MENU_X, MENU_Y - 95), "midleft")
+    escribir(pantalla, fuente_titulo, "PAUSA", BLANCO, (MENU_X, PAUSA_Y - 95), "midleft")
     for i in range(len(OPCIONES_PAUSA)):
-        dibujar_opcion(pantalla, fuente, OPCIONES_PAUSA[i], MENU_Y + i * MENU_SEPARACION, i == seleccion)
+        dibujar_opcion(pantalla, fuente, OPCIONES_PAUSA[i], PAUSA_Y + i * MENU_SEPARACION, i == seleccion)
 
 
 def dibujar_barra(pantalla, y, volumen):
@@ -297,7 +414,8 @@ def dibujar_instrucciones(pantalla, fuente_titulo, fuente, fuente_chica, sombra)
     escribir(pantalla, fuente, "OBJETIVO", CIAN, (MENU_X, y), "midleft")
     objetivo = [
         "Protegé al gato mago de los espíritus del bosque.",
-        "Superá los tres niveles para que el bosque vuelva a dormir.",
+        "Superá los cinco niveles para que el bosque vuelva a dormir.",
+        "Cada nivel que superás desbloquea el siguiente.",
     ]
     for i in range(len(objetivo)):
         escribir(pantalla, fuente_chica, objetivo[i], BLANCO, (MENU_X, y + 34 + i * 26), "midleft")

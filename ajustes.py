@@ -48,6 +48,16 @@ VIDAS = 3
 PUNTOS_POR_FANTASMA = 10
 CUADROS_CARTEL = 150       # cuánto dura el cartel que presenta cada nivel (5 segundos)
 
+# --- Pantalla de niveles: una tarjeta por nivel ---
+TARJETA_ANCHO = 150
+TARJETA_ALTO = 190
+TARJETA_SEPARACION = 22
+TARJETAS_Y = 200           # borde de arriba de las tarjetas
+
+# --- Progreso ---
+ARCHIVO_PROGRESO = "progreso.json"   # acá se guarda cuántos niveles están desbloqueados
+DESBLOQUEAR_TODO = False             # True para probar (o para la defensa): todos abiertos
+
 # --- Niveles ---
 # Cada nivel es un diccionario. Para cambiar la dificultad, se toca acá y nada más.
 #   fantasmas: cuántos aparecen en total
@@ -76,6 +86,20 @@ NIVELES = [
         "espera": 55,
         "novedades": ["Vienen más espíritus, y más seguido."],
     },
+    {
+        "nombre": "Luna de huesos",
+        "fantasmas": 14,
+        "velocidad": 2.3,
+        "espera": 48,
+        "novedades": ["La noche se pone más oscura."],
+    },
+    {
+        "nombre": "El corazón del bosque",
+        "fantasmas": 16,
+        "velocidad": 2.6,
+        "espera": 42,
+        "novedades": ["Lo que duerme bajo el bosque está despertando."],
+    },
 ]
 
 # --- Sonido ---
@@ -99,8 +123,10 @@ VELOCIDAD_FUNDIDO = 15         # transición a negro: cuánto oscurece por cuadr
 TITULO_JUEGO = ["BOSQUE", "ENCANTADO"]   # una línea por elemento
 FRASE_INICIO = ["Protegé al gato mago hasta que", "el bosque vuelva a dormir"]   # abajo a la derecha
 IMAGEN_FONDO_MENU = "img/fondo_completo"   # sin extensión: prueba .png, .jpg y .jpeg
-IMAGEN_FONDO_JUEGO = "img/fondo1"          # capa de atrás durante el juego
-IMAGEN_FRENTE_JUEGO = "img/fondo2"         # capa de adelante (PNG con partes transparentes)
+# Durante el juego el fondo son dos capas. Las dos se estiran al ancho de la ventana
+# sin deformarse: el cielo se pega arriba y el piso abajo, encima del cielo.
+IMAGEN_CIELO = "img/fondo2"
+IMAGEN_PISO = "img/fondo1"                 # PNG con la parte de arriba transparente
 MENU_X = 72                # todo el menú está alineado a la izquierda, a esta distancia del borde
 TITULO_Y = 40              # borde de arriba del título
 TITULO_TAMANO = 120
@@ -108,6 +134,7 @@ TITULO_INTERLINEADO = 112  # distancia entre las dos líneas del título
 TITULO_ANCHO_MAXIMO = ANCHO - 2 * MENU_X   # si el título es más ancho, se achica
 MENU_Y = 362               # altura de la primera opción
 MENU_SEPARACION = 48       # distancia entre opciones
+PAUSA_Y = 290              # altura de la primera opción de la pausa (tiene más opciones)
 TAMANO_MENU = 26           # letra de las opciones
 BARRA_X = MENU_X + 300     # dónde empiezan las barras de volumen
 BARRA_ANCHO = 280
