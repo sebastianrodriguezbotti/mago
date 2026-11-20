@@ -79,8 +79,11 @@ NIVELES = [
 ]
 
 # --- Sonido ---
-VOLUMEN_INICIAL = 0.7      # entre 0 y 1
-PASO_VOLUMEN = 0.1         # cuánto cambia con cada flecha
+VOLUMEN_EFECTOS_INICIAL = 0.7   # entre 0 y 1
+VOLUMEN_MUSICA_INICIAL = 0.5
+PASO_VOLUMEN = 0.1              # cuánto cambia con cada flecha
+# Música de fondo: si existe un archivo con este nombre (.ogg, .mp3 o .wav), suena en loop.
+MUSICA = "sonidos/musica"
 
 # --- Bosque (lo que se mueve en el fondo) ---
 CANTIDAD_FUEGOS = 12           # fuegos fatuos flotando
@@ -93,13 +96,22 @@ PROBABILIDAD_OJOS = 0.003      # ojos que aparecen entre los árboles
 VELOCIDAD_FUNDIDO = 15         # transición a negro: cuánto oscurece por cuadro (de 0 a 255)
 
 # --- Menú ---
-MENU_Y = 225               # altura de la primera opción
-MENU_SEPARACION = 52       # distancia entre opciones
+TITULO_JUEGO = "NOCHE DE FANTASMAS"
+IMAGEN_FONDO_MENU = "img/fondo_completo"   # sin extensión: prueba .png, .jpg y .jpeg
+MENU_X = 70                # todo el menú está alineado a la izquierda, a esta distancia del borde
+TITULO_Y = 60              # borde de arriba del título
+TITULO_TAMANO = 70
+TITULO_ANCHO_MAXIMO = ANCHO - 2 * MENU_X   # si el título es más ancho, se achica
+MENU_Y = 250               # altura de la primera opción
+MENU_SEPARACION = 58       # distancia entre opciones
+BARRA_X = MENU_X + 250     # dónde empiezan las barras de volumen
+BARRA_ANCHO = 280
 
 # --- Tipografías ---
 # Bajalas de fonts.google.com y guardalas en la carpeta fuentes/.
 # Si no están, se usa una fuente con serifa de Windows.
 FUENTE_TITULO = "CinzelDecorative-Regular.ttf"
+FUENTE_TITULO_NEGRITA = "CinzelDecorative-Bold.ttf"
 FUENTE_TEXTO = "CormorantGaramond-Medium.ttf"
 FUENTE_RESPALDO = "palatinolinotype,bookantiqua,georgia,timesnewroman"
 

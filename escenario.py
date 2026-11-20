@@ -23,12 +23,23 @@ def mezclar(color1, color2, k):
     return (r, g, b)
 
 
-def cargar_fuente(archivo, tamano):
+def cargar_fuente(archivo, tamano, negrita=False):
     """Carga una fuente de la carpeta fuentes/. Si no está, usa una de Windows."""
     ruta = os.path.join("fuentes", archivo)
     if os.path.exists(ruta):
         return pygame.font.Font(ruta, tamano)
-    return pygame.font.SysFont(FUENTE_RESPALDO, tamano)
+    return pygame.font.SysFont(FUENTE_RESPALDO, tamano, bold=negrita)
+
+
+def cargar_imagen_fondo(ruta_sin_extension):
+    """Carga la imagen y la estira al tamaño de la ventana. Devuelve None si no existe."""
+    for extension in (".png", ".jpg", ".jpeg"):
+        ruta = ruta_sin_extension + extension
+        if os.path.exists(ruta):
+            imagen = pygame.image.load(ruta).convert()
+            return pygame.transform.smoothscale(imagen, (ANCHO, ALTO))
+    print("No encontré la imagen", ruta_sin_extension, "- uso el bosque dibujado")
+    return None
 
 
 def crear_brillos(radio, color, niveles):
