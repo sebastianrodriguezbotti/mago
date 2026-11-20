@@ -1,6 +1,6 @@
 # main.py
 # El gato mago: dibujá en el aire el sigilo de cada espíritu para espantarlo.
-# Este archivo arma todo, maneja las escenas (menú, instrucciones, juego)
+# Este archivo arma todo, maneja las escenas (menú, instrucciones, sonido, juego, pausa)
 # y corre el bucle principal. Las reglas de la partida están en juego.py.
 
 import pygame
@@ -63,7 +63,10 @@ if cap is None:
     raise SystemExit
 
 bosque = Bosque()
-fondo_menu = cargar_imagen_fondo(IMAGEN_FONDO_MENU)   # None si no está la imagen
+# imágenes: si alguna no está, queda None y se usa el bosque dibujado
+fondo_menu = cargar_imagen_fondo(IMAGEN_FONDO_MENU)
+fondo_juego = cargar_imagen_fondo(IMAGEN_FONDO_JUEGO)                    # capa de atrás
+frente_juego = cargar_imagen_fondo(IMAGEN_FRENTE_JUEGO, transparente=True)   # capa de adelante
 
 # velos oscuros: para los carteles y para los fundidos a negro
 velo = pygame.Surface((ANCHO, ALTO), pygame.SRCALPHA)
@@ -86,9 +89,11 @@ fuente_menu = cargar_fuente(FUENTE_TEXTO, TAMANO_MENU)
 sombra_izquierda = menu.crear_sombra_izquierda()
 fuente = recursos["texto"]
 
-escena = "menu"     # "menu", "instrucciones", "sonido" o "juego"
+escena = "menu"     # "menu", "instrucciones", "sonido", "juego" o "pausa"
+volver_a = "menu"   # a dónde vuelven "Cómo jugar" y "Música y sonido": al inicio o a la pausa
 seleccion = 0       # opción marcada en el menú
 seleccion_sonido = 0  # opción marcada en "Música y sonido"
+seleccion_pausa = 0   # opción marcada en la pausa
 destino = None      # a qué escena vamos cuando hay un fundido; None si no hay
 fundido = 255       # 0 = se ve todo, 255 = todo negro. Arranca en negro y aparece.
 partida = juego.nueva_partida()
@@ -114,10 +119,31 @@ while andando:
                 destino = "juego"
             elif eleccion == "Cómo jugar":
                 destino = "instrucciones"
+                volver_a = "menu"
             elif eleccion == "Música y sonido":
                 destino = "sonido"
+                volver_a = "menu"
                 seleccion_sonido = 0
             elif eleccion == "Salir":
+                destino = "salir"
+
+        elif escena == "pausa":
+            seleccion_pausa, eleccion = menu.evento_menu(e, fuente_menu, seleccion_pausa,
+                                                         menu.OPCIONES_PAUSA, "Continuar")
+            # dentro de la pausa se cambia de pantalla sin fundido: el juego queda congelado atrás
+            if eleccion == "Continuar":
+                escena = "juego"
+                volver_a = "menu"
+            elif eleccion == "Cómo jugar":
+                escena = "instrucciones"
+                volver_a = "pausa"
+            elif eleccion == "Música y sonido":
+                escena = "sonido"
+                volver_a = "pausa"
+                seleccion_sonido = 0
+            elif eleccion == "Volver al inicio":
+                destino = "menu"
+            elif eleccion == "Salir del juego":
                 destino = "salir"
 
         elif escena == "sonido":
@@ -127,15 +153,25 @@ while andando:
                 menu.aplicar_volumen(sonidos.values(), volumenes["efectos"])
                 sonidos["hechizo"].play()    # para escuchar cómo quedó
             elif que_paso == "volver":
-                destino = "menu"
+                if volver_a == "pausa":
+                    escena = "pausa"
+                else:
+                    destino = "menu"
 
         elif escena == "instrucciones":
             if menu.evento_instrucciones(e, fuente_menu) == "volver":
-                destino = "menu"
+                if volver_a == "pausa":
+                    escena = "pausa"
+                else:
+                    destino = "menu"
 
         elif escena == "juego" and e.type == pygame.KEYDOWN:
             if e.key == pygame.K_ESCAPE:
-                destino = "menu"
+                if partida["estado"] in ("perdiste", "ganaste"):
+                    destino = "menu"          # la partida ya terminó: directo al inicio
+                else:
+                    escena = "pausa"
+                    seleccion_pausa = 0
             elif e.key == pygame.K_RETURN:
                 juego.saltar_cartel(partida)
             elif e.key == pygame.K_r and partida["estado"] in ("perdiste", "ganaste"):
@@ -150,6 +186,8 @@ while andando:
                 andando = False
             elif destino == "juego":
                 partida = juego.nueva_partida()
+            if destino == "menu":
+                volver_a = "menu"
             escena = destino
             destino = None
     elif fundido > 0:
@@ -169,9 +207,32 @@ while andando:
             sonidos[nombre].play()
 
     # --- Dibujar ---
-    # de atrás hacia adelante: lo que se dibuja después queda encima
-    if escena != "juego" and fondo_menu is not None:
-        pantalla.blit(fondo_menu, (0, 0))      # las pantallas del menú usan la imagen
+    # de atrás hacia adelante: lo que se dibuja después queda encima.
+    # La partida se ve en el juego, en la pausa y en las pantallas abiertas desde la pausa.
+    en_partida = escena in ("juego", "pausa") or volver_a == "pausa"
+
+    if en_partida:
+        if fondo_juego is not None:
+            pantalla.blit(fondo_juego, (0, 0))      # capa de atrás
+            bosque.dibujar_fuegos(pantalla)
+            bosque.dibujar_gato(pantalla)
+        else:
+            bosque.dibujar_fondo(pantalla)
+            bosque.dibujar_piedras(pantalla, False)
+            bosque.dibujar_gato(pantalla)
+            bosque.dibujar_piedras(pantalla, True)
+        juego.dibujar_fantasmas(pantalla, partida, recursos)
+        if frente_juego is not None:
+            pantalla.blit(frente_juego, (0, 0))     # capa de adelante
+        else:
+            bosque.dibujar_frente(pantalla)
+        juego.dibujar_interfaz(pantalla, partida, pos, recursos, completa=(escena == "juego"))
+        if escena == "juego" and frame is not None:
+            dibujar_espejo(pantalla, frame, pos)
+        if escena != "juego":
+            pantalla.blit(velo, (0, 0))             # el juego congelado queda oscurecido atrás
+    elif fondo_menu is not None:
+        pantalla.blit(fondo_menu, (0, 0))
     else:
         bosque.dibujar_fondo(pantalla)
         bosque.dibujar_piedras(pantalla, False)
@@ -181,18 +242,15 @@ while andando:
 
     if escena == "menu":
         menu.dibujar_menu(pantalla, recursos["titulo_juego"], fuente_menu, recursos["chica"], seleccion)
-        dibujar_cursor(pantalla, bosque.brillo_chico, pygame.mouse.get_pos())
+    elif escena == "pausa":
+        menu.dibujar_pausa(pantalla, recursos["titulo"], fuente_menu, seleccion_pausa)
     elif escena == "sonido":
         menu.dibujar_sonido(pantalla, recursos["titulo_juego"], fuente_menu, recursos["chica"],
                             seleccion_sonido, volumenes)
-        dibujar_cursor(pantalla, bosque.brillo_chico, pygame.mouse.get_pos())
     elif escena == "instrucciones":
         menu.dibujar_instrucciones(pantalla, recursos["titulo"], fuente_menu, recursos["chica"], sombra_izquierda)
+    if escena != "juego":
         dibujar_cursor(pantalla, bosque.brillo_chico, pygame.mouse.get_pos())
-    elif escena == "juego":
-        juego.dibujar(pantalla, partida, pos, recursos)
-        if frame is not None:
-            dibujar_espejo(pantalla, frame, pos)
 
     if fundido > 0:
         negro.set_alpha(fundido)

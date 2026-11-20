@@ -9,6 +9,7 @@ from ajustes import *
 
 OPCIONES = ["Jugar", "Cómo jugar", "Música y sonido", "Salir"]
 OPCIONES_SONIDO = ["Música", "Efectos", "Volver"]
+OPCIONES_PAUSA = ["Continuar", "Cómo jugar", "Música y sonido", "Volver al inicio", "Salir del juego"]
 
 
 # ---------- Texto ----------
@@ -141,28 +142,29 @@ def opcion_bajo_mouse(fuente, lista, pos):
 
 # ---------- Qué hace cada tecla o clic ----------
 
-def evento_menu(e, fuente, seleccion):
-    """Recibe un evento en la pantalla de inicio.
-    Devuelve (seleccion, eleccion): eleccion es el texto de la opción elegida, o None."""
+def evento_menu(e, fuente, seleccion, lista=OPCIONES, al_escape="Salir"):
+    """Recibe un evento en una lista de opciones (la de inicio o la de pausa).
+    Devuelve (seleccion, eleccion): eleccion es el texto de la opción elegida, o None.
+    Esc elige la opción al_escape."""
     eleccion = None
     if e.type == pygame.MOUSEMOTION:
-        debajo = opcion_bajo_mouse(fuente, OPCIONES, e.pos)
+        debajo = opcion_bajo_mouse(fuente, lista, e.pos)
         if debajo is not None:
             seleccion = debajo
     elif e.type == pygame.MOUSEBUTTONDOWN and e.button == 1:
-        debajo = opcion_bajo_mouse(fuente, OPCIONES, e.pos)
+        debajo = opcion_bajo_mouse(fuente, lista, e.pos)
         if debajo is not None:
             seleccion = debajo
-            eleccion = OPCIONES[seleccion]
+            eleccion = lista[seleccion]
     elif e.type == pygame.KEYDOWN:
         if e.key == pygame.K_ESCAPE:
-            eleccion = "Salir"
+            eleccion = al_escape
         elif e.key == pygame.K_UP:
-            seleccion = (seleccion - 1) % len(OPCIONES)
+            seleccion = (seleccion - 1) % len(lista)
         elif e.key == pygame.K_DOWN:
-            seleccion = (seleccion + 1) % len(OPCIONES)
+            seleccion = (seleccion + 1) % len(lista)
         elif e.key == pygame.K_RETURN:
-            eleccion = OPCIONES[seleccion]
+            eleccion = lista[seleccion]
     return seleccion, eleccion
 
 
@@ -245,6 +247,12 @@ def dibujar_menu(pantalla, titulo, fuente, fuente_chica, seleccion):
     for i in range(len(FRASE_INICIO)):
         y = ALTO - 40 - (len(FRASE_INICIO) - 1 - i) * alto
         escribir(pantalla, fuente_chica, FRASE_INICIO[i], BLANCO, (ANCHO - 170, y))
+
+
+def dibujar_pausa(pantalla, fuente_titulo, fuente, seleccion):
+    escribir(pantalla, fuente_titulo, "PAUSA", BLANCO, (MENU_X, MENU_Y - 95), "midleft")
+    for i in range(len(OPCIONES_PAUSA)):
+        dibujar_opcion(pantalla, fuente, OPCIONES_PAUSA[i], MENU_Y + i * MENU_SEPARACION, i == seleccion)
 
 
 def dibujar_barra(pantalla, y, volumen):

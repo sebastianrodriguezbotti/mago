@@ -151,11 +151,19 @@ def actualizar(partida, pos):
 
 # ---------- Dibujo ----------
 
-def dibujar(pantalla, partida, pos, r):
-    """Dibuja la partida. r es un diccionario con los recursos: fuentes, bosque, sprite, velo."""
-    bosque = r["bosque"]
+def dibujar_fantasmas(pantalla, partida, r):
+    """Dibuja los fantasmas. r es un diccionario con los recursos: fuentes, bosque, sprite, velo."""
     for f in partida["fantasmas"]:
-        f.dibujar(pantalla, r["sprite"], bosque.brillo_fuego)
+        f.dibujar(pantalla, r["sprite"], r["bosque"].brillo_fuego)
+
+
+def dibujar_interfaz(pantalla, partida, pos, r, completa=True):
+    """Dibuja lo que va encima de todo: el trazo, el cursor, los indicadores y los carteles.
+    Con completa=False (en la pausa) dibuja solo los indicadores."""
+    bosque = r["bosque"]
+    if not completa:
+        dibujar_indicadores(pantalla, partida, r)
+        return
 
     dibujar_trazo(pantalla, partida["trazo"])
     if pos is not None:

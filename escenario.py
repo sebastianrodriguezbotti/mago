@@ -33,12 +33,16 @@ def cargar_fuente(archivo, tamano):
     return pygame.font.SysFont(RESPALDO_TEXTO, tamano)
 
 
-def cargar_imagen_fondo(ruta_sin_extension):
-    """Carga la imagen y la estira al tamaño de la ventana. Devuelve None si no existe."""
+def cargar_imagen_fondo(ruta_sin_extension, transparente=False):
+    """Carga la imagen y la estira al tamaño de la ventana. Devuelve None si no existe.
+    transparente=True respeta las partes transparentes del PNG (para la capa de adelante)."""
     for extension in (".png", ".jpg", ".jpeg"):
         ruta = ruta_sin_extension + extension
         if os.path.exists(ruta):
-            imagen = pygame.image.load(ruta).convert()
+            if transparente:
+                imagen = pygame.image.load(ruta).convert_alpha()
+            else:
+                imagen = pygame.image.load(ruta).convert()
             return pygame.transform.smoothscale(imagen, (ANCHO, ALTO))
     print("No encontré la imagen", ruta_sin_extension, "- uso el bosque dibujado")
     return None
@@ -358,6 +362,11 @@ class Bosque:
         dibujar_brillo(pantalla, self.brillo_circulo, (GATO_X, GATO_Y + 30), 0.25 + 0.15 * self.respirar(0))
         self.dibujar_ojos(pantalla)
         self.dibujar_niebla(pantalla, self.niebla, ALTO - 260, self.niebla_x)
+        for f in self.fuegos:
+            f.dibujar(pantalla, self.brillo_fuego)
+
+    def dibujar_fuegos(self, pantalla):
+        """Solo los fuegos fatuos: para cuando el fondo es una imagen."""
         for f in self.fuegos:
             f.dibujar(pantalla, self.brillo_fuego)
 
