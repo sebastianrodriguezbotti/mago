@@ -2,15 +2,30 @@
 # El Espíritu del Piso: un fantasma gigante que sube del suelo y golpea donde está el gato.
 # Primero marca el lugar en el suelo, y un momento después sale una garra ahí.
 # El jugador lo esquiva moviendo la cabeza (el gato sigue a la cabeza).
+#
+# En el nivel 5 es el jefe (jefe=True): tiene vida y está todo el nivel.
+# Alterna rondas de ataques con momentos en que queda "vulnerable": muestra un sigilo
+# y, si el jugador lo dibuja con la mano, le saca vida.
 
 import math
+import os
+import random
 import pygame
 from escenario import mezclar, dibujar_brillo
+from fantasma import dibujar_simbolo
 from ajustes import *
 
 
 def crear_sprite_gigante():
-    """Dibuja una vez el cuerpo del gigante, semitransparente, y lo devuelve."""
+    """Devuelve la imagen del gigante. Si existe IMAGEN_ESPIRITU (PNG) la usa;
+    si no, lo dibuja con formas, semitransparente."""
+    ruta = IMAGEN_ESPIRITU + ".png"
+    if os.path.exists(ruta):
+        imagen = pygame.image.load(ruta).convert_alpha()
+        ancho = ESPIRITU_RADIO * 2
+        alto = int(imagen.get_height() * ancho / imagen.get_width())
+        return pygame.transform.smoothscale(imagen, (ancho, alto))
+
     r = ESPIRITU_RADIO
     sup = pygame.Surface((r * 2, r * 3), pygame.SRCALPHA)
     cuerpo = (*COLOR_FANTASMA, 105)
@@ -44,22 +59,38 @@ def crear_garra():
 
 
 class EspirituDelPiso:
-    def __init__(self, cantidad_ataques):
-        self.fase = "subiendo"       # "subiendo", "atacando", "bajando" o "terminado"
+    def __init__(self, cantidad_ataques, jefe=False):
+        # fases: "subiendo", "atacando", "vulnerable" (solo el jefe), "bajando", "terminado"
+        self.fase = "subiendo"
+        self.jefe = jefe
+        self.vida = JEFE_VIDA
         self.altura = 0.0            # 0 = escondido bajo el piso, 1 = afuera del todo
+        self.ataques_por_ronda = cantidad_ataques
         self.ataques_restantes = cantidad_ataques
         self.espera = ESPIRITU_PAUSA # cuadros hasta marcar el próximo ataque
         self.ataque_x = None         # dónde va a golpear (None si no hay ataque en curso)
         self.aviso = 0               # cuadros que le quedan a la marca antes del golpe
         self.golpe = 0               # cuadros que le quedan a la garra afuera
+        self.simbolo = None          # el sigilo que muestra cuando está vulnerable
+        self.vulnerable = 0          # cuadros que le quedan descubierto
+        self.herido = 0              # cuadros que titila después de recibir un hechizo
         self.tiempo = 0
         self.sprite = crear_sprite_gigante()
         self.garra = crear_garra()
+
+    def posicion(self):
+        """Devuelve (x, y): dónde está el centro de la cabeza ahora."""
+        x = ANCHO // 2 + math.sin(self.tiempo * 0.03) * 40        # se balancea despacio
+        escondido = ALTO + ESPIRITU_RADIO                          # abajo del borde de la pantalla
+        y = escondido + (ESPIRITU_Y - escondido) * self.altura
+        return (x, y)
 
     def actualizar(self, gato_x):
         """Avanza un cuadro. Devuelve "dano" si un golpe alcanzó al gato,
         "golpe" si golpeó y el gato lo esquivó, o None."""
         self.tiempo += 1
+        if self.herido > 0:
+            self.herido -= 1
         resultado = None
 
         if self.fase == "subiendo":
@@ -73,11 +104,7 @@ class EspirituDelPiso:
                 # la garra está afuera: espera a que se esconda
                 self.golpe -= 1
                 if self.golpe == 0:
-                    self.ataque_x = None
-                    self.ataques_restantes -= 1
-                    self.espera = ESPIRITU_PAUSA
-                    if self.ataques_restantes == 0:
-                        self.fase = "bajando"
+                    self.terminar_ataque()
             elif self.ataque_x is not None:
                 # hay una marca en el suelo: cuenta hacia atrás y golpea
                 self.aviso -= 1
@@ -94,6 +121,15 @@ class EspirituDelPiso:
                     self.ataque_x = gato_x
                     self.aviso = ESPIRITU_AVISO
 
+        elif self.fase == "vulnerable":
+            self.vulnerable -= 1
+            if self.vulnerable <= 0:
+                # se le acabó el tiempo descubierto: otra ronda de ataques
+                self.fase = "atacando"
+                self.simbolo = None
+                self.ataques_restantes = self.ataques_por_ronda
+                self.espera = ESPIRITU_PAUSA
+
         elif self.fase == "bajando":
             self.altura -= 1 / ESPIRITU_SUBIR
             if self.altura <= 0:
@@ -101,6 +137,39 @@ class EspirituDelPiso:
                 self.fase = "terminado"
 
         return resultado
+
+    def terminar_ataque(self):
+        """Termina un ataque y decide qué sigue: otro ataque, descubrirse o irse."""
+        self.ataque_x = None
+        self.ataques_restantes -= 1
+        self.espera = ESPIRITU_PAUSA
+        if self.ataques_restantes == 0:
+            if self.jefe:
+                self.fase = "vulnerable"
+                self.vulnerable = JEFE_VULNERABLE
+                self.simbolo = random.choice(SIMBOLOS)
+            else:
+                self.fase = "bajando"
+
+    def recibir_hechizo(self, simbolo):
+        """El jugador dibujó un sigilo. Devuelve True si le hizo daño."""
+        if self.fase != "vulnerable" or simbolo != self.simbolo:
+            return False
+        self.vida -= JEFE_DANO
+        self.herido = 12
+        if self.vida <= 0:
+            self.vida = 0
+            self.fase = "bajando"
+            self.simbolo = None
+        else:
+            # otro sigilo distinto al anterior
+            otros = [s for s in SIMBOLOS if s != simbolo]
+            self.simbolo = random.choice(otros)
+        return True
+
+    def derrotado(self):
+        """Devuelve True si es el jefe y se quedó sin vida."""
+        return self.jefe and self.vida <= 0
 
     def alcanza(self, gato_x):
         """Devuelve True si el gato está dentro de la zona del golpe."""
@@ -110,16 +179,34 @@ class EspirituDelPiso:
         """El gigante, asomando detrás del piso. Va antes de dibujar el piso."""
         if self.altura <= 0:
             return
-        x = ANCHO // 2 + math.sin(self.tiempo * 0.03) * 40        # se balancea despacio
-        y = ALTO + ESPIRITU_RADIO - self.altura * ESPIRITU_RADIO * 2.4
-        pantalla.blit(self.sprite, (int(x) - ESPIRITU_RADIO, int(y) - ESPIRITU_RADIO))
+        if self.herido > 0 and self.herido % 4 < 2:
+            return                   # titila cuando recibe un hechizo
+        x, y = self.posicion()
+        ancho = self.sprite.get_width()
+        pantalla.blit(self.sprite, (int(x) - ancho // 2, int(y) - ESPIRITU_RADIO))
         # los ojos le brillan en cian, más fuerte cuando está por golpear
         fuerza = 0.5
         if self.ataque_x is not None and self.golpe == 0:
             fuerza = 1
+        if self.fase == "vulnerable":
+            fuerza = 0.2             # descubierto: los ojos se apagan
         for dx in (-41, 41):
             dibujar_brillo(pantalla, brillos, (x + dx, y), fuerza)
-            pygame.draw.circle(pantalla, CIAN_CLARO, (int(x + dx), int(y)), 6)
+            pygame.draw.circle(pantalla, mezclar(NOCHE_2, CIAN_CLARO, 0.4 + 0.6 * fuerza),
+                               (int(x + dx), int(y)), 6)
+
+    def dibujar_sigilo(self, pantalla, brillos):
+        """Cuando está vulnerable, el sigilo que hay que dibujar, arriba de la cabeza.
+        Va encima del piso, para que se vea siempre."""
+        if self.fase != "vulnerable" or self.simbolo is None:
+            return
+        x, y = self.posicion()
+        sy = int(y - ESPIRITU_RADIO - 45)
+        dibujar_brillo(pantalla, brillos, (x, sy), 1)
+        dibujar_simbolo(pantalla, self.simbolo, int(x), sy, 26)
+        # una barrita debajo del sigilo: el tiempo que le queda descubierto
+        ancho = int(120 * self.vulnerable / JEFE_VULNERABLE)
+        pygame.draw.line(pantalla, CIAN, (int(x) - ancho // 2, sy + 42), (int(x) + ancho // 2, sy + 42), 3)
 
     def dibujar_ataque(self, pantalla, brillos):
         """La marca en el suelo y la garra. Va después del gato: la garra lo tapa."""

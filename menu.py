@@ -427,8 +427,9 @@ def dibujar_instrucciones(pantalla, fuente_titulo, fuente, fuente_chica, sombra)
         "Juntá el índice y el pulgar y dibujá ese sigilo en el aire.",
         "Separá los dedos para lanzar el hechizo:",
         "se desvanecen todos los espíritus con ese sigilo.",
-        "Si uno toca al gato, perdés una vida. Tenés tres.",
+        "Si un espíritu toca al gato, le baja la vida. Si la barra se vacía, perdés.",
         "Desde el nivel 3 sale un gigante del piso: mové la cabeza para esquivarlo.",
+        "En el nivel 5 esquivá al jefe y, cuando se descubra, dibujá su sigilo.",
     ]
     for i in range(len(lineas)):
         escribir(pantalla, fuente_chica, lineas[i], BLANCO, (MENU_X, y + 34 + i * 26), "midleft")
@@ -436,7 +437,7 @@ def dibujar_instrucciones(pantalla, fuente_titulo, fuente, fuente_chica, sombra)
     # los cuatro sigilos que existen
     simbolos = ["—", "|", "V", "Λ"]
     for i in range(len(simbolos)):
-        dibujar_simbolo(pantalla, simbolos[i], MENU_X + 20 + i * 90, 470, 18)
+        dibujar_simbolo(pantalla, simbolos[i], MENU_X + 20 + i * 90, 500, 18)
 
     # el único botón: VOLVER, siempre elegido
     dibujar_opcion(pantalla, fuente, "Volver", ALTO - 60, True)

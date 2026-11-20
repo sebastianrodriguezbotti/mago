@@ -3,8 +3,10 @@
 
 # --- Ventana y cámara ---
 CAMARA_INDICE = 0          # 0 es la cámara de la compu. Si no anda, probá 1.
-ANCHO = 960
-ALTO = 640
+# El juego se dibuja en este tamaño (16:9) y pygame lo estira a la pantalla.
+ANCHO = 1152
+ALTO = 648
+PANTALLA_COMPLETA = True   # F11 cambia entre pantalla completa y ventana
 FPS = 30
 
 # --- Detección de la mano ---
@@ -54,17 +56,27 @@ ESPIRITU_AVISO = 40            # cuadros que se ve la marca antes del golpe
 ESPIRITU_GOLPE = 18            # cuadros que dura la garra afuera
 ESPIRITU_ANCHO_GOLPE = 110     # ancho de la zona que golpea
 ESPIRITU_ALTO_GOLPE = 300
-ESPIRITU_RADIO = 130           # tamaño del gigante
+ESPIRITU_RADIO = 130           # tamaño del gigante (si se dibuja con código)
+ESPIRITU_Y = 275               # altura del centro de la cabeza cuando está afuera del todo
+IMAGEN_ESPIRITU = "img/espiritu_gigante"   # si existe (PNG), se usa en lugar del dibujo
 SUELO_Y = GATO_Y + 60          # la línea del suelo, donde salen los golpes
-PUNTOS_ESPIRITU = 50           # por sobrevivir a todos los ataques
+
+# --- El jefe del nivel 5: el mismo gigante, pero con vida ---
+JEFE_VIDA = 100
+JEFE_DANO = 10                 # cuánto le saca cada sigilo bien dibujado
+JEFE_ATAQUES_RONDA = 3         # ataques seguidos antes de descubrirse
+JEFE_VULNERABLE = 330          # cuadros que queda descubierto (11 s)
+JEFE_NOMBRE = "EL ESPÍRITU DEL BOSQUE"
+BARRA_JEFE_ANCHO = 520
 
 # --- Fantasmas ---
 SIMBOLOS = ["—", "|", "V", "Λ"]
 RADIO_FANTASMA = 28
 
 # --- Partida ---
-VIDAS = 3
-PUNTOS_POR_FANTASMA = 10
+VIDA_GATO = 100            # la barra de vida del gato; si llega a 0, perdés
+DANO_FANTASMA = 20         # cuánto le saca un fantasma que lo toca
+DANO_GARRA = 25            # cuánto le saca un golpe del Espíritu del Piso
 CUADROS_CARTEL = 150       # cuánto dura el cartel que presenta cada nivel (5 segundos)
 
 # --- Pantalla de niveles: una tarjeta por nivel ---
@@ -119,11 +131,14 @@ NIVELES = [
     },
     {
         "nombre": "El corazón del bosque",
-        "fantasmas": 16,
+        "fantasmas": 0,        # en este nivel solo está el jefe
         "velocidad": 2.6,
         "espera": 42,
-        "ataques_piso": 5,
-        "novedades": ["Lo que duerme bajo el bosque está despertando."],
+        "ataques_piso": JEFE_ATAQUES_RONDA,
+        "jefe": True,          # el gigante está todo el nivel y tiene barra de vida
+        "novedades": ["El Espíritu del Bosque despertó.",
+                      "Esquivá sus golpes con la cabeza y, cuando se descubra,",
+                      "dibujá su sigilo con la mano para dañarlo."],
     },
 ]
 
@@ -150,8 +165,8 @@ FRASE_INICIO = ["Protegé al gato mago hasta que", "el bosque vuelva a dormir"] 
 IMAGEN_FONDO_MENU = "img/fondo_completo"   # sin extensión: prueba .png, .jpg y .jpeg
 # Durante el juego el fondo son dos capas. Las dos se estiran al ancho de la ventana
 # sin deformarse: el cielo se pega arriba y el piso abajo, encima del cielo.
-IMAGEN_CIELO = "img/fondo2"
-IMAGEN_PISO = "img/fondo1"                 # PNG con la parte de arriba transparente
+IMAGEN_CIELO = "img/fondo1"
+IMAGEN_PISO = "img/fondo2"                 # PNG con la parte de arriba transparente
 MENU_X = 72                # todo el menú está alineado a la izquierda, a esta distancia del borde
 TITULO_Y = 40              # borde de arriba del título
 TITULO_TAMANO = 120

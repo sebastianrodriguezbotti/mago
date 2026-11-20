@@ -35,7 +35,11 @@ def dibujar_espejo(pantalla, frame, pos):
 
 pygame.init()
 pygame.mixer.init()
-pantalla = pygame.display.set_mode((ANCHO, ALTO))
+# SCALED: el juego se dibuja en ANCHO x ALTO y pygame lo estira a la pantalla (y ajusta el mouse)
+if PANTALLA_COMPLETA:
+    pantalla = pygame.display.set_mode((ANCHO, ALTO), pygame.SCALED | pygame.FULLSCREEN)
+else:
+    pantalla = pygame.display.set_mode((ANCHO, ALTO), pygame.SCALED)
 pygame.display.set_caption("Noche de Fantasmas")
 pygame.mouse.set_visible(False)      # el cursor es un fuego fatuo
 reloj = pygame.time.Clock()
@@ -116,6 +120,8 @@ while andando:
     for e in pygame.event.get():
         if e.type == pygame.QUIT:
             andando = False
+        if e.type == pygame.KEYDOWN and e.key == pygame.K_F11:
+            pygame.display.toggle_fullscreen()      # pantalla completa <-> ventana
 
         if destino is not None:
             continue            # durante un fundido no se aceptan teclas
