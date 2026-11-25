@@ -32,7 +32,7 @@ def nueva_partida(nivel_inicio=0):
         "completado": None,   # cuando se supera un nivel, queda su número hasta que main lo guarda
         "oso_x": OSO_X,     # el oso se mueve solo durante el Espíritu del Piso
         "espiritu": None,     # el Espíritu del Piso, cuando está afuera
-        "hasta_espiritu": 0,  # cuadros hasta que salga el próximo
+        "momentos_jefe": [],  # cuántos fantasmas tienen que haber salido para que aparezca el jefe
         "sin_cara": 0,        # cuadros seguidos sin ver la cara
     }
     empezar_nivel(partida, nivel_inicio)
@@ -54,12 +54,22 @@ def empezar_nivel(partida, numero):
     partida["trazo"] = []
     partida["vida"] = VIDA_OSO          # cada nivel empieza con la vida llena
     partida["oso_x"] = OSO_X
-    partida["hasta_espiritu"] = ESPIRITU_PRIMERA_VEZ
+    partida["momentos_jefe"] = momentos_del_jefe(NIVELES[numero])
     if es_nivel_jefe(partida):
         # el jefe está desde el principio y dura todo el nivel
         partida["espiritu"] = EspirituDelPiso(NIVELES[numero]["ataques_piso"], jefe=True)
     else:
         partida["espiritu"] = None
+
+
+def momentos_del_jefe(nivel):
+    """Devuelve en qué momentos del nivel aparece el jefe, contados en fantasmas salidos.
+    Con 12 fantasmas y 1 vez: [6] (la mitad). Con 14 y 2 veces: [4, 9] (un tercio y dos tercios)."""
+    momentos = []
+    veces = nivel["veces_jefe"]
+    for i in range(1, veces + 1):
+        momentos.append(nivel["fantasmas"] * i // (veces + 1))
+    return momentos
 
 
 def es_nivel_jefe(partida):
@@ -129,17 +139,21 @@ def crear_fantasma(nivel):
     else:
         x = ANCHO + RADIO_FANTASMA
         y = random.randint(0, ALTO // 2)
-    simbolo = random.choice(SIMBOLOS)
-    return Fantasma(x, y, simbolo, nivel["velocidad"])
+    simbolos = random.sample(SIMBOLOS, nivel["simbolos"])    # distintos entre sí
+    return Fantasma(x, y, simbolos, nivel["velocidad"])
 
 
 def lanzar_hechizo(fantasmas, simbolo):
-    """Devuelve la lista de fantasmas que sobreviven al hechizo."""
+    """Le aplica el hechizo a todos los fantasmas: a los que tenían ese sigilo primero, se lo saca.
+    Devuelve (sobrevivientes, acertados): los que todavía tienen sigilos, y a cuántos les acertó."""
     sobrevivientes = []
+    acertados = 0
     for f in fantasmas:
-        if f.simbolo != simbolo:
+        if f.recibir_hechizo(simbolo):
+            acertados += 1
+        if len(f.simbolos) > 0:
             sobrevivientes.append(f)
-    return sobrevivientes
+    return sobrevivientes, acertados
 
 
 def actualizar(partida, pos):
@@ -181,7 +195,6 @@ def actualizar(partida, pos):
             sonidos.append("fallo")
         if espiritu.fase == "terminado":
             partida["espiritu"] = None
-            partida["hasta_espiritu"] = ESPIRITU_CADA
             sonidos.append("hechizo")
 
     else:
@@ -191,10 +204,10 @@ def actualizar(partida, pos):
         # 1. La mano: dibujar y lanzar hechizos
         simbolo = leer_trazo(partida, pos)
         if simbolo is not None:
-            antes = len(partida["fantasmas"])
+            acertados = 0
             if simbolo != "":
-                partida["fantasmas"] = lanzar_hechizo(partida["fantasmas"], simbolo)
-            if len(partida["fantasmas"]) < antes:
+                partida["fantasmas"], acertados = lanzar_hechizo(partida["fantasmas"], simbolo)
+            if acertados > 0:
                 sonidos.append("hechizo")
             else:
                 sonidos.append("fallo")
@@ -219,14 +232,14 @@ def actualizar(partida, pos):
                 quedan.append(f)
         partida["fantasmas"] = quedan
 
-        # 4. ¿Le toca salir al Espíritu del Piso?
-        if nivel["ataques_piso"] > 0:
-            partida["hasta_espiritu"] -= 1
-            if partida["hasta_espiritu"] <= 0:
-                partida["espiritu"] = EspirituDelPiso(nivel["ataques_piso"])
-                partida["trazo"] = []
-                partida["sin_cara"] = 0
-                sonidos.append("temblor")
+        # 4. ¿Le toca salir al jefe? (cuando salieron tantos fantasmas como dice momentos_jefe)
+        salidos = nivel["fantasmas"] - partida["por_salir"]
+        if len(partida["momentos_jefe"]) > 0 and salidos >= partida["momentos_jefe"][0]:
+            partida["momentos_jefe"].pop(0)
+            partida["espiritu"] = EspirituDelPiso(nivel["ataques_piso"])
+            partida["trazo"] = []
+            partida["sin_cara"] = 0
+            sonidos.append("temblor")
 
     # 5. ¿Perdiste, o terminó el nivel?
     if partida["vida"] <= 0:

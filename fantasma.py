@@ -32,11 +32,12 @@ def crear_sprite_fantasma():
 
 
 class Fantasma:
-    def __init__(self, x, y, simbolo, velocidad):
+    def __init__(self, x, y, simbolos, velocidad):
         self.x = x
         self.y = y
-        self.simbolo = simbolo
+        self.simbolos = simbolos  # lista: se borran de a uno, en orden. Vacía = espantado
         self.velocidad = velocidad
+        self.herido = 0           # cuadros que titila después de perder un sigilo
         self.fase = x * 0.01     # para que no floten todos sincronizados
 
     def mover(self):
@@ -48,6 +49,17 @@ class Fantasma:
             self.x += dx / distancia * self.velocidad
             self.y += dy / distancia * self.velocidad
         self.fase += 0.08
+        if self.herido > 0:
+            self.herido -= 1
+
+    def recibir_hechizo(self, simbolo):
+        """Si el sigilo coincide con el primero que le queda, se lo saca.
+        Devuelve True si acertó."""
+        if len(self.simbolos) > 0 and self.simbolos[0] == simbolo:
+            self.simbolos.pop(0)
+            self.herido = 10
+            return True
+        return False
 
     def choca_con_oso(self):
         """Devuelve True si el fantasma llegó al oso."""
@@ -55,31 +67,46 @@ class Fantasma:
         return distancia < RADIO_OSO + RADIO_FANTASMA
 
     def dibujar(self, pantalla, sprite, brillos):
+        if self.herido > 0 and self.herido % 4 < 2:
+            return                # titila cuando pierde un sigilo
         x = int(self.x)
         y = int(self.y + math.sin(self.fase) * 4)    # flota subiendo y bajando
         # (x, y) es el centro del fantasma: la imagen se centra ahí
         ancho = sprite.get_width()
         alto = sprite.get_height()
         pantalla.blit(sprite, (x - ancho // 2, y - alto // 2))
-        # el sigilo que hay que dibujar para espantarlo, arriba de la cabeza
+        # los sigilos que le quedan, en fila arriba de la cabeza.
+        # El primero (el que hay que dibujar ahora) brilla; los otros se ven apagados.
         sy = y - alto // 2 - 22
-        dibujar_brillo(pantalla, brillos, (x, sy), 0.7)
-        dibujar_simbolo(pantalla, self.simbolo, x, sy, 13)
+        separacion = 40
+        inicio = x - (len(self.simbolos) - 1) * separacion // 2
+        for i in range(len(self.simbolos)):
+            sx = inicio + i * separacion
+            if i == 0:
+                dibujar_brillo(pantalla, brillos, (sx, sy), 0.7)
+                dibujar_simbolo(pantalla, self.simbolos[i], sx, sy, 13)
+            else:
+                dibujar_simbolo(pantalla, self.simbolos[i], sx, sy, 11, apagado=True)
 
 
-def linea_brillante(pantalla, puntos):
-    """Una línea con halo: una gruesa y oscura abajo, una fina y clara arriba."""
+def linea_brillante(pantalla, puntos, apagado=False):
+    """Una línea con halo: una gruesa y oscura abajo, una fina y clara arriba.
+    apagado=True la dibuja sin brillo (para los sigilos que todavía no tocan)."""
+    if apagado:
+        pygame.draw.lines(pantalla, mezclar(NOCHE_2, CIAN, 0.45), False, puntos, 3)
+        return
     pygame.draw.lines(pantalla, mezclar(NOCHE_2, CIAN, 0.35), False, puntos, 9)
     pygame.draw.lines(pantalla, COLOR_SIMBOLO, False, puntos, 3)
 
 
-def dibujar_simbolo(pantalla, simbolo, cx, cy, tam):
+def dibujar_simbolo(pantalla, simbolo, cx, cy, tam, apagado=False):
     """Dibuja el símbolo con líneas, centrado en (cx, cy)."""
     if simbolo == "—":
-        linea_brillante(pantalla, [(cx - tam, cy), (cx + tam, cy)])
+        puntos = [(cx - tam, cy), (cx + tam, cy)]
     elif simbolo == "|":
-        linea_brillante(pantalla, [(cx, cy - tam), (cx, cy + tam)])
+        puntos = [(cx, cy - tam), (cx, cy + tam)]
     elif simbolo == "V":
-        linea_brillante(pantalla, [(cx - tam, cy - tam), (cx, cy + tam), (cx + tam, cy - tam)])
-    elif simbolo == "Λ":
-        linea_brillante(pantalla, [(cx - tam, cy + tam), (cx, cy - tam), (cx + tam, cy + tam)])
+        puntos = [(cx - tam, cy - tam), (cx, cy + tam), (cx + tam, cy - tam)]
+    else:   # "Λ"
+        puntos = [(cx - tam, cy + tam), (cx, cy - tam), (cx + tam, cy + tam)]
+    linea_brillante(pantalla, puntos, apagado)

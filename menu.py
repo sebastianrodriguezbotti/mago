@@ -423,12 +423,12 @@ def dibujar_instrucciones(pantalla, fuente_titulo, fuente, fuente_chica, sombra)
     y = 250
     escribir(pantalla, fuente, "CÓMO SE JUEGA", CIAN, (MENU_X, y), "midleft")
     lineas = [
-        "Cada espíritu lleva un sigilo sobre la cabeza.",
+        "Cada espíritu lleva sigilos sobre la cabeza.",
         "Juntá el índice y el pulgar y dibujá ese sigilo en el aire.",
         "Separá los dedos para lanzar el hechizo:",
-        "se desvanecen todos los espíritus con ese sigilo.",
+        "les sacás ese sigilo. Si tienen dos, dibujalos en orden.",
         "Si un espíritu toca al oso, le baja la vida. Si la barra se vacía, perdés.",
-        "Desde el nivel 3 aparece un gigante que ataca: mové la cabeza para esquivarlo.",
+        "En los niveles 3 y 4 aparece el jefe: mové la cabeza para esquivarlo.",
         "En el nivel 5 esquivá al jefe y, cuando se descubra, dibujá su sigilo.",
     ]
     for i in range(len(lineas)):

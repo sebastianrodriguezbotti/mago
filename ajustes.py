@@ -58,8 +58,6 @@ SUAVIDAD_OSO = 0.25       # 1 = salta directo a donde está la cabeza; menos = s
 CARA_TAMANO_MINIMO = 30    # caras más chicas que esto (en la imagen achicada) se ignoran
 
 # --- Espíritu del Piso: sale del suelo y ataca; hay que esquivar ---
-ESPIRITU_PRIMERA_VEZ = 360     # cuadros desde que empieza el nivel hasta que aparece (12 s)
-ESPIRITU_CADA = 750            # cuadros entre una aparición y la siguiente (25 s)
 ESPIRITU_SUBIR = 75            # cuadros que tarda en aparecer (y en desaparecer)
 ESPIRITU_PAUSA = 30            # cuadros entre un ataque y el siguiente
 ESPIRITU_AVISO = 40            # cuadros que se ve la marca antes del golpe
@@ -100,51 +98,66 @@ DESBLOQUEAR_TODO = False             # True para probar (o para la defensa): tod
 
 # --- Niveles ---
 # Cada nivel es un diccionario. Para cambiar la dificultad, se toca acá y nada más.
-#   fantasmas: cuántos aparecen en total
-#   velocidad: píxeles por cuadro
-#   espera:    cuadros entre un fantasma y el siguiente
-#   novedades: lo que se muestra en el cartel al empezar el nivel
+#   fantasmas:   cuántos aparecen en total
+#   simbolos:    cuántos sigilos lleva cada fantasma (hay que dibujarlos todos, en orden)
+#   velocidad:   píxeles por cuadro
+#   espera:      cuadros entre un fantasma y el siguiente
+#   veces_jefe:  cuántas veces aparece el jefe en el nivel (repartidas entre los fantasmas)
+#   ataques_piso: cuántos golpes da el jefe cada vez que aparece
+#   jefe:        True solo en el último nivel: el jefe está todo el nivel y tiene vida
+#   novedades:   lo que se muestra en el cartel al empezar el nivel
 NIVELES = [
     {
         "nombre": "El despertar",
         "fantasmas": 8,
+        "simbolos": 1,
         "velocidad": 1.2,
         "espera": 75,
-        "ataques_piso": 0,     # 0 = el Espíritu del Piso no aparece en este nivel
+        "veces_jefe": 0,
+        "ataques_piso": 0,
         "novedades": ["Dibujá el sigilo de cada espíritu para espantarlo."],
     },
     {
         "nombre": "La niebla espesa",
         "fantasmas": 10,
-        "velocidad": 1.6,
-        "espera": 65,
+        "simbolos": 2,
+        "velocidad": 1.2,
+        "espera": 90,
+        "veces_jefe": 0,
         "ataques_piso": 0,
-        "novedades": ["Los espíritus se mueven más rápido."],
+        "novedades": ["Ahora cada espíritu lleva dos sigilos.",
+                      "Dibujalos en orden, de izquierda a derecha, para espantarlo."],
     },
     {
         "nombre": "Raíces que susurran",
         "fantasmas": 12,
-        "velocidad": 2.0,
-        "espera": 55,
+        "simbolos": 2,
+        "velocidad": 1.4,
+        "espera": 80,
+        "veces_jefe": 1,
         "ataques_piso": 3,
-        "novedades": ["Aparece un espíritu gigante y te ataca desde el piso.",
+        "novedades": ["A mitad del nivel, el jefe sale de la tierra y te ataca.",
                       "Mové la cabeza a los costados para esquivar sus golpes."],
     },
     {
         "nombre": "Luna de huesos",
         "fantasmas": 14,
-        "velocidad": 2.3,
-        "espera": 48,
+        "simbolos": 2,
+        "velocidad": 1.6,
+        "espera": 70,
+        "veces_jefe": 2,
         "ataques_piso": 4,
-        "novedades": ["La noche se pone más oscura."],
+        "novedades": ["El jefe aparece dos veces.", "Sus golpes son más seguidos."],
     },
     {
         "nombre": "El corazón del bosque",
         "fantasmas": 0,        # en este nivel solo está el jefe
-        "velocidad": 2.6,
-        "espera": 42,
+        "simbolos": 1,
+        "velocidad": 1.6,
+        "espera": 70,
+        "veces_jefe": 0,       # no hace falta: en este nivel está desde el principio
         "ataques_piso": JEFE_ATAQUES_RONDA,
-        "jefe": True,          # el gigante está todo el nivel y tiene barra de vida
+        "jefe": True,
         "novedades": ["El Espíritu del Bosque despertó.",
                       "Esquivá sus golpes con la cabeza y, cuando se descubra,",
                       "dibujá su sigilo con la mano para dañarlo."],
