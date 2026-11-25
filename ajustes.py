@@ -32,19 +32,26 @@ PUNTOS_MINIMOS = 10        # un trazo con menos puntos no cuenta como símbolo
 PROPORCION_LINEA = 2       # ancho > alto * 2  -> línea horizontal (y al revés)
 CUADROS_AVISO = 120        # 4 segundos sin dibujar -> aviso en pantalla
 
-# --- Gato y círculo de piedras ---
-GATO_X = ANCHO // 2
-GATO_Y = ALTO - 120
-RADIO_GATO = 45
-CIRCULO_RADIO_X = 170      # el círculo de piedras es una elipse alrededor del gato
+# --- Oso y círculo de piedras ---
+OSO_X = ANCHO // 2
+OSO_Y = ALTO - 120
+RADIO_OSO = 45
+# Imágenes de los personajes (PNG con fondo transparente). Si no están, se dibujan con código.
+IMAGEN_OSO = "img/oso"
+OSO_ALTO = 150             # la imagen del oso se escala a esta altura, sin deformarse
+IMAGEN_FANTASMA = "img/fantasma"
+FANTASMA_ALTO = 90
+IMAGEN_JEFE = "img/jefe"   # el gigante del piso (en los niveles 3 y 4, y el jefe del 5)
+JEFE_ANCHO = 300
+CIRCULO_RADIO_X = 170      # el círculo de piedras es una elipse alrededor del oso
 CIRCULO_RADIO_Y = 40
 CANTIDAD_PIEDRAS = 9
 ALTO_PIEDRA = 50
 
-# --- Mover al gato con la cabeza (durante el Espíritu del Piso) ---
-SENSIBILIDAD_CABEZA = 2.2  # la cabeza se mueve poco: el gato se mueve 2,2 veces más
-MARGEN_GATO = 90           # el gato no puede acercarse más que esto a los bordes
-SUAVIDAD_GATO = 0.25       # 1 = salta directo a donde está la cabeza; menos = se desliza
+# --- Mover al oso con la cabeza (durante el Espíritu del Piso) ---
+SENSIBILIDAD_CABEZA = 2.2  # la cabeza se mueve poco: el oso se mueve 2,2 veces más
+MARGEN_OSO = 90           # el oso no puede acercarse más que esto a los bordes
+SUAVIDAD_OSO = 0.25       # 1 = salta directo a donde está la cabeza; menos = se desliza
 CARA_TAMANO_MINIMO = 30    # caras más chicas que esto (en la imagen achicada) se ignoran
 
 # --- Espíritu del Piso: sale del suelo y ataca; hay que esquivar ---
@@ -58,8 +65,7 @@ ESPIRITU_ANCHO_GOLPE = 110     # ancho de la zona que golpea
 ESPIRITU_ALTO_GOLPE = 300
 ESPIRITU_RADIO = 130           # tamaño del gigante (si se dibuja con código)
 ESPIRITU_Y = 275               # altura del centro de la cabeza cuando está afuera del todo
-IMAGEN_ESPIRITU = "img/espiritu_gigante"   # si existe (PNG), se usa en lugar del dibujo
-SUELO_Y = GATO_Y + 60          # la línea del suelo, donde salen los golpes
+SUELO_Y = OSO_Y + 60          # la línea del suelo, donde salen los golpes
 
 # --- El jefe del nivel 5: el mismo gigante, pero con vida ---
 JEFE_VIDA = 100
@@ -74,7 +80,7 @@ SIMBOLOS = ["—", "|", "V", "Λ"]
 RADIO_FANTASMA = 28
 
 # --- Partida ---
-VIDA_GATO = 100            # la barra de vida del gato; si llega a 0, perdés
+VIDA_OSO = 100            # la barra de vida del oso; si llega a 0, perdés
 DANO_FANTASMA = 20         # cuánto le saca un fantasma que lo toca
 DANO_GARRA = 25            # cuánto le saca un golpe del Espíritu del Piso
 CUADROS_CARTEL = 150       # cuánto dura el cartel que presenta cada nivel (5 segundos)
@@ -161,7 +167,7 @@ VELOCIDAD_FUNDIDO = 15         # transición a negro: cuánto oscurece por cuadr
 
 # --- Menú ---
 TITULO_JUEGO = ["BOSQUE", "ENCANTADO"]   # una línea por elemento
-FRASE_INICIO = ["Protegé al gato mago hasta que", "el bosque vuelva a dormir"]   # abajo a la derecha
+FRASE_INICIO = ["Protegé al oso hasta que", "el bosque vuelva a dormir"]   # abajo a la derecha
 IMAGEN_FONDO_MENU = "img/fondo_completo"   # sin extensión: prueba .png, .jpg y .jpeg
 # Durante el juego el fondo son dos capas. Las dos se estiran al ancho de la ventana
 # sin deformarse: el cielo se pega arriba y el piso abajo, encima del cielo.
@@ -206,7 +212,7 @@ COLOR_TEXTO = BLANCO_AZULADO
 COLOR_FANTASMA = (170, 190, 215)
 COLOR_OJOS = NOCHE_1
 COLOR_SIMBOLO = CIAN_CLARO
-COLOR_GATO = NOCHE_1
+COLOR_OSO = NOCHE_1
 COLOR_SOMBRERO = NOCHE_3
 COLOR_AVISO = CIAN_CLARO
 COLOR_ELEGIDO = CIAN

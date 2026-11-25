@@ -1,31 +1,22 @@
 # espiritu_piso.py
-# El Espíritu del Piso: un fantasma gigante que sube del suelo y golpea donde está el gato.
+# El Espíritu del Piso: un fantasma gigante que sube del suelo y golpea donde está el oso.
 # Primero marca el lugar en el suelo, y un momento después sale una garra ahí.
-# El jugador lo esquiva moviendo la cabeza (el gato sigue a la cabeza).
+# El jugador lo esquiva moviendo la cabeza (el oso sigue a la cabeza).
 #
 # En el nivel 5 es el jefe (jefe=True): tiene vida y está todo el nivel.
 # Alterna rondas de ataques con momentos en que queda "vulnerable": muestra un sigilo
 # y, si el jugador lo dibuja con la mano, le saca vida.
 
 import math
-import os
 import random
 import pygame
-from escenario import mezclar, dibujar_brillo
+from escenario import mezclar, dibujar_brillo, cargar_sprite
 from fantasma import dibujar_simbolo
 from ajustes import *
 
 
-def crear_sprite_gigante():
-    """Devuelve la imagen del gigante. Si existe IMAGEN_ESPIRITU (PNG) la usa;
-    si no, lo dibuja con formas, semitransparente."""
-    ruta = IMAGEN_ESPIRITU + ".png"
-    if os.path.exists(ruta):
-        imagen = pygame.image.load(ruta).convert_alpha()
-        ancho = ESPIRITU_RADIO * 2
-        alto = int(imagen.get_height() * ancho / imagen.get_width())
-        return pygame.transform.smoothscale(imagen, (ancho, alto))
-
+def dibujar_sprite_gigante():
+    """Dibuja una vez el gigante con formas, semitransparente (si no hay imagen)."""
     r = ESPIRITU_RADIO
     sup = pygame.Surface((r * 2, r * 3), pygame.SRCALPHA)
     cuerpo = (*COLOR_FANTASMA, 105)
@@ -58,6 +49,21 @@ def crear_garra():
     return sup
 
 
+# Las imágenes se cargan una sola vez, con cargar_imagenes(), antes del bucle principal.
+imagenes = {"gigante": None, "garra": None, "con_imagen": False}
+
+
+def cargar_imagenes():
+    """Carga (o dibuja) una sola vez el gigante y la garra. Se llama desde main antes del bucle."""
+    imagen = cargar_sprite(IMAGEN_JEFE, ancho=JEFE_ANCHO)    # img/jefe.png
+    imagenes["con_imagen"] = imagen is not None
+    if imagen is not None:
+        imagenes["gigante"] = imagen
+    else:
+        imagenes["gigante"] = dibujar_sprite_gigante()
+    imagenes["garra"] = crear_garra()
+
+
 class EspirituDelPiso:
     def __init__(self, cantidad_ataques, jefe=False):
         # fases: "subiendo", "atacando", "vulnerable" (solo el jefe), "bajando", "terminado"
@@ -75,8 +81,9 @@ class EspirituDelPiso:
         self.vulnerable = 0          # cuadros que le quedan descubierto
         self.herido = 0              # cuadros que titila después de recibir un hechizo
         self.tiempo = 0
-        self.sprite = crear_sprite_gigante()
-        self.garra = crear_garra()
+        self.sprite = imagenes["gigante"]
+        self.garra = imagenes["garra"]
+        self.con_imagen = imagenes["con_imagen"]
 
     def posicion(self):
         """Devuelve (x, y): dónde está el centro de la cabeza ahora."""
@@ -85,9 +92,9 @@ class EspirituDelPiso:
         y = escondido + (ESPIRITU_Y - escondido) * self.altura
         return (x, y)
 
-    def actualizar(self, gato_x):
-        """Avanza un cuadro. Devuelve "dano" si un golpe alcanzó al gato,
-        "golpe" si golpeó y el gato lo esquivó, o None."""
+    def actualizar(self, oso_x):
+        """Avanza un cuadro. Devuelve "dano" si un golpe alcanzó al oso,
+        "golpe" si golpeó y el oso lo esquivó, o None."""
         self.tiempo += 1
         if self.herido > 0:
             self.herido -= 1
@@ -110,15 +117,15 @@ class EspirituDelPiso:
                 self.aviso -= 1
                 if self.aviso == 0:
                     self.golpe = ESPIRITU_GOLPE
-                    if self.alcanza(gato_x):
+                    if self.alcanza(oso_x):
                         resultado = "dano"
                     else:
                         resultado = "golpe"
             else:
-                # no hay ataque: espera y después apunta a donde está el gato AHORA
+                # no hay ataque: espera y después apunta a donde está el oso AHORA
                 self.espera -= 1
                 if self.espera <= 0:
-                    self.ataque_x = gato_x
+                    self.ataque_x = oso_x
                     self.aviso = ESPIRITU_AVISO
 
         elif self.fase == "vulnerable":
@@ -171,9 +178,9 @@ class EspirituDelPiso:
         """Devuelve True si es el jefe y se quedó sin vida."""
         return self.jefe and self.vida <= 0
 
-    def alcanza(self, gato_x):
-        """Devuelve True si el gato está dentro de la zona del golpe."""
-        return abs(gato_x - self.ataque_x) < ESPIRITU_ANCHO_GOLPE / 2 + RADIO_GATO * 0.6
+    def alcanza(self, oso_x):
+        """Devuelve True si el oso está dentro de la zona del golpe."""
+        return abs(oso_x - self.ataque_x) < ESPIRITU_ANCHO_GOLPE / 2 + RADIO_OSO * 0.6
 
     def dibujar_gigante(self, pantalla, brillos):
         """El gigante, asomando detrás del piso. Va antes de dibujar el piso."""
@@ -184,6 +191,8 @@ class EspirituDelPiso:
         x, y = self.posicion()
         ancho = self.sprite.get_width()
         pantalla.blit(self.sprite, (int(x) - ancho // 2, int(y) - ESPIRITU_RADIO))
+        if self.con_imagen:
+            return                   # con imagen, los ojos ya vienen en el dibujo
         # los ojos le brillan en cian, más fuerte cuando está por golpear
         fuerza = 0.5
         if self.ataque_x is not None and self.golpe == 0:
@@ -209,7 +218,7 @@ class EspirituDelPiso:
         pygame.draw.line(pantalla, CIAN, (int(x) - ancho // 2, sy + 42), (int(x) + ancho // 2, sy + 42), 3)
 
     def dibujar_ataque(self, pantalla, brillos):
-        """La marca en el suelo y la garra. Va después del gato: la garra lo tapa."""
+        """La marca en el suelo y la garra. Va después del oso: la garra lo tapa."""
         if self.ataque_x is None:
             return
         x = int(self.ataque_x)

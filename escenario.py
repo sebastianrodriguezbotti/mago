@@ -1,6 +1,6 @@
 # escenario.py
 # El "Bosque Espectral": todo lo que se ve y no es parte de las reglas del juego.
-# Fondo de árboles, niebla, fuegos fatuos, círculo de piedras, el gato y los efectos de luz.
+# Fondo de árboles, niebla, fuegos fatuos, círculo de piedras, el oso y los efectos de luz.
 #
 # Idea clave de la luz: una "mancha de luz" es un círculo que va de cian en el centro
 # a negro en el borde. Se pega con BLEND_ADD, que SUMA los colores: el negro no
@@ -49,6 +49,21 @@ def cargar_imagen_fondo(ruta_sin_extension, capa=False):
             return pygame.transform.smoothscale(imagen, (ANCHO, alto))
     print("No encontré la imagen", ruta_sin_extension, "- uso el bosque dibujado")
     return None
+
+
+def cargar_sprite(ruta_sin_extension, alto=None, ancho=None):
+    """Carga la imagen de un personaje (PNG con transparencia) y la escala sin deformarla:
+    a la altura alto, o al ancho ancho. Devuelve None si no existe."""
+    ruta = ruta_sin_extension + ".png"
+    if not os.path.exists(ruta):
+        print("No encontré", ruta, "- lo dibujo con código")
+        return None
+    imagen = pygame.image.load(ruta).convert_alpha()
+    if alto is not None:
+        ancho = int(imagen.get_width() * alto / imagen.get_height())
+    else:
+        alto = int(imagen.get_height() * ancho / imagen.get_width())
+    return pygame.transform.smoothscale(imagen, (ancho, alto))
 
 
 def crear_brillos(radio, color, niveles):
@@ -219,7 +234,7 @@ def crear_fondo():
     luz_hongo = crear_brillos(10, CIAN, 6)
     for i in range(16):
         x = random.randint(20, ANCHO - 20)
-        if abs(x - GATO_X) < CIRCULO_RADIO_X + 20:
+        if abs(x - OSO_X) < CIRCULO_RADIO_X + 20:
             continue    # no en el círculo de piedras
         y = random.randint(ALTO - 90, ALTO - 30)
         for j in range(random.randint(1, 3)):
@@ -285,10 +300,10 @@ def dibujar_sigilo(pantalla, tipo, cx, cy, tam, color):
 def crear_piedras():
     """Devuelve la lista de piedras del círculo, ordenada de atrás hacia adelante."""
     piedras = []
-    centro_y = GATO_Y + 45
+    centro_y = OSO_Y + 45
     for i in range(CANTIDAD_PIEDRAS):
         angulo = math.radians(360 * i / CANTIDAD_PIEDRAS - 90)
-        x = GATO_X + math.cos(angulo) * CIRCULO_RADIO_X
+        x = OSO_X + math.cos(angulo) * CIRCULO_RADIO_X
         y = centro_y + math.sin(angulo) * CIRCULO_RADIO_Y
         # las de adelante (y más grande) se ven más grandes
         escala = 0.7 + 0.3 * (math.sin(angulo) + 1) / 2
@@ -324,6 +339,7 @@ class Bosque:
             {"ramas": crear_arbol(30, ALTO + 10, 640, 24, 10), "base_y": ALTO + 10, "altura": 640},
             {"ramas": crear_arbol(ANCHO - 30, ALTO + 10, 640, 24, -10), "base_y": ALTO + 10, "altura": 640},
         ]
+        self.imagen_oso = cargar_sprite(IMAGEN_OSO, alto=OSO_ALTO)   # None si no está
         self.tiempo = 0
         self.niebla_x = 0
         self.viento = 0
@@ -362,7 +378,7 @@ class Bosque:
     def dibujar_fondo(self, pantalla):
         pantalla.blit(self.fondo, (0, 0))
         # la luz del círculo de piedras, que ilumina la niebla del fondo
-        dibujar_brillo(pantalla, self.brillo_circulo, (GATO_X, GATO_Y + 30), 0.25 + 0.15 * self.respirar(0))
+        dibujar_brillo(pantalla, self.brillo_circulo, (OSO_X, OSO_Y + 30), 0.25 + 0.15 * self.respirar(0))
         self.dibujar_ojos(pantalla)
         self.dibujar_niebla(pantalla, self.niebla, ALTO - 260, self.niebla_x)
         for f in self.fuegos:
@@ -392,12 +408,12 @@ class Bosque:
 
     def dibujar_piedras(self, pantalla, adelante):
         """Dibuja las piedras de atrás (adelante=False) o las de adelante (True)."""
-        centro_y = GATO_Y + 45
+        centro_y = OSO_Y + 45
         if not adelante:
             # el anillo tallado en el suelo
             k = self.respirar(0)
             rect = pygame.Rect(0, 0, CIRCULO_RADIO_X * 2 + 30, CIRCULO_RADIO_Y * 2 + 10)
-            rect.center = (GATO_X, centro_y)
+            rect.center = (OSO_X, centro_y)
             pygame.draw.ellipse(pantalla, mezclar(NOCHE_2, CIAN, 0.25 + 0.35 * k), rect, 2)
             rect.inflate_ip(-50, -14)
             pygame.draw.ellipse(pantalla, mezclar(NOCHE_2, CIAN, 0.15 + 0.2 * k), rect, 1)
@@ -420,19 +436,24 @@ class Bosque:
             dibujar_brillo(pantalla, self.brillo_chico, (cx, cy), 0.3 + 0.7 * k)
             dibujar_sigilo(pantalla, p["sigilo"], cx, cy, 6, mezclar(NOCHE_3, CIAN_CLARO, 0.3 + 0.7 * k))
 
-    def dibujar_gato(self, pantalla, x=GATO_X):
-        """El gato es una silueta negra; solo le brillan los ojos y la punta del sombrero.
-        x es dónde está: se mueve durante el Espíritu del Piso."""
+    def dibujar_oso(self, pantalla, x=OSO_X):
+        """El oso, parado sobre el suelo. x es dónde está: se mueve durante el Espíritu del Piso.
+        Si no hay imagen, se dibuja una silueta negra con sombrero de mago."""
         x = int(x)
-        y = GATO_Y
+        y = OSO_Y
+        if self.imagen_oso is not None:
+            ancho = self.imagen_oso.get_width()
+            alto = self.imagen_oso.get_height()
+            pantalla.blit(self.imagen_oso, (x - ancho // 2, SUELO_Y - alto))   # los pies sobre el suelo
+            return
         # cola
-        pygame.draw.arc(pantalla, COLOR_GATO, (x + 15, y + 5, 60, 55), -1.2, 1.6, 7)
+        pygame.draw.arc(pantalla, COLOR_OSO, (x + 15, y + 5, 60, 55), -1.2, 1.6, 7)
         # cuerpo y cabeza
-        pygame.draw.ellipse(pantalla, COLOR_GATO, (x - 38, y, 76, 62))
-        pygame.draw.circle(pantalla, COLOR_GATO, (x, y - 5), 30)
+        pygame.draw.ellipse(pantalla, COLOR_OSO, (x - 38, y, 76, 62))
+        pygame.draw.circle(pantalla, COLOR_OSO, (x, y - 5), 30)
         # orejas
-        pygame.draw.polygon(pantalla, COLOR_GATO, [(x - 28, y - 14), (x - 20, y - 46), (x - 6, y - 30)])
-        pygame.draw.polygon(pantalla, COLOR_GATO, [(x + 28, y - 14), (x + 20, y - 46), (x + 6, y - 30)])
+        pygame.draw.polygon(pantalla, COLOR_OSO, [(x - 28, y - 14), (x - 20, y - 46), (x - 6, y - 30)])
+        pygame.draw.polygon(pantalla, COLOR_OSO, [(x + 28, y - 14), (x + 20, y - 46), (x + 6, y - 30)])
         # sombrero de mago, torcido
         punta = (x + 12, y - 92)
         pygame.draw.polygon(pantalla, COLOR_SOMBRERO, [(x - 24, y - 30), (x + 22, y - 30), punta])
@@ -446,7 +467,7 @@ class Bosque:
         for dx in (-11, 11):
             dibujar_brillo(pantalla, self.brillo_chico, (x + dx, y - 6), 0.7)
             pygame.draw.ellipse(pantalla, CIAN_CLARO, (x + dx - 4, y - 10, 8, 8))
-            pygame.draw.line(pantalla, COLOR_GATO, (x + dx, y - 10), (x + dx, y - 3), 2)
+            pygame.draw.line(pantalla, COLOR_OSO, (x + dx, y - 10), (x + dx, y - 3), 2)
 
     def dibujar_frente(self, pantalla):
         """Lo que va adelante de todo: la niebla baja y los árboles que se mueven con el viento."""

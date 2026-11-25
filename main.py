@@ -1,5 +1,5 @@
 # main.py
-# El gato mago: dibujá en el aire el sigilo de cada espíritu para espantarlo.
+# Bosque Encantado: dibujá en el aire el sigilo de cada espíritu para espantarlo.
 # Este archivo arma todo, maneja las escenas (menú, instrucciones, sonido, juego, pausa)
 # y corre el bucle principal. Las reglas de la partida están en juego.py.
 
@@ -8,6 +8,7 @@ import vision
 import menu
 import juego
 import progreso
+import espiritu_piso
 from fantasma import crear_sprite_fantasma
 import os
 from escenario import Bosque, cargar_fuente, cargar_imagen_fondo, dibujar_cursor, mezclar
@@ -69,7 +70,8 @@ if cap is None:
     pygame.quit()
     raise SystemExit
 
-bosque = Bosque()
+bosque = Bosque()                    # carga también la imagen del oso
+espiritu_piso.cargar_imagenes()      # el gigante y su garra
 # imágenes: si alguna no está, queda None y se usa el bosque dibujado
 fondo_menu = cargar_imagen_fondo(IMAGEN_FONDO_MENU)
 cielo = cargar_imagen_fondo(IMAGEN_CIELO, capa=True)    # atrás, pegado arriba
@@ -260,15 +262,15 @@ while andando:
             juego.dibujar_gigante(pantalla, partida, recursos)  # asoma detrás del piso
             pantalla.blit(piso, (0, ALTO - piso.get_height()))  # el piso, pegado abajo
             bosque.dibujar_fuegos(pantalla)
-            bosque.dibujar_gato(pantalla, partida["gato_x"])
+            bosque.dibujar_oso(pantalla, partida["oso_x"])
         else:
             bosque.dibujar_fondo(pantalla)
             juego.dibujar_gigante(pantalla, partida, recursos)
             bosque.dibujar_piedras(pantalla, False)
-            bosque.dibujar_gato(pantalla, partida["gato_x"])
+            bosque.dibujar_oso(pantalla, partida["oso_x"])
             bosque.dibujar_piedras(pantalla, True)
             bosque.dibujar_frente(pantalla)
-        juego.dibujar_ataque(pantalla, partida, recursos)      # la marca y la garra, encima del gato
+        juego.dibujar_ataque(pantalla, partida, recursos)      # la marca y la garra, encima del oso
         juego.dibujar_fantasmas(pantalla, partida, recursos)   # los fantasmas, arriba de todo
         juego.dibujar_interfaz(pantalla, partida, pos, recursos, completa=(escena == "juego"))
         if escena == "juego" and frame is not None:
@@ -280,7 +282,7 @@ while andando:
     else:
         bosque.dibujar_fondo(pantalla)
         bosque.dibujar_piedras(pantalla, False)
-        bosque.dibujar_gato(pantalla)
+        bosque.dibujar_oso(pantalla)
         bosque.dibujar_piedras(pantalla, True)
         bosque.dibujar_frente(pantalla)
 

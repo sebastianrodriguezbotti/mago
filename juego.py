@@ -1,5 +1,5 @@
 # juego.py
-# Las reglas de la partida: niveles, fantasmas, hechizos, la vida del gato y el jefe.
+# Las reglas de la partida: niveles, fantasmas, hechizos, la vida del oso y el jefe.
 # Y cómo se dibuja la partida en pantalla.
 # main.py solo le pasa la posición de la mano y reproduce los sonidos que esto le pide.
 
@@ -20,7 +20,7 @@ def nueva_partida(nivel_inicio=0):
     empezando en el nivel nivel_inicio (0 es el primero)."""
     partida = {
         "fantasmas": [],
-        "vida": VIDA_GATO,    # la barra del gato: si llega a 0, perdés
+        "vida": VIDA_OSO,    # la barra del oso: si llega a 0, perdés
         "nivel": 0,           # posición en la lista NIVELES (0 es el primero)
         "por_salir": 0,       # fantasmas que faltan aparecer en este nivel
         "espera": 0,          # cuadros hasta el próximo fantasma
@@ -30,7 +30,7 @@ def nueva_partida(nivel_inicio=0):
         "sin_varita": 0,      # cuadros seguidos sin pellizco
         "inicio": nivel_inicio,   # para "jugar de nuevo" desde el mismo nivel
         "completado": None,   # cuando se supera un nivel, queda su número hasta que main lo guarda
-        "gato_x": GATO_X,     # el gato se mueve solo durante el Espíritu del Piso
+        "oso_x": OSO_X,     # el oso se mueve solo durante el Espíritu del Piso
         "espiritu": None,     # el Espíritu del Piso, cuando está afuera
         "hasta_espiritu": 0,  # cuadros hasta que salga el próximo
         "sin_cara": 0,        # cuadros seguidos sin ver la cara
@@ -52,8 +52,8 @@ def empezar_nivel(partida, numero):
     partida["estado"] = "cartel"
     partida["cartel"] = CUADROS_CARTEL
     partida["trazo"] = []
-    partida["vida"] = VIDA_GATO          # cada nivel empieza con la vida llena
-    partida["gato_x"] = GATO_X
+    partida["vida"] = VIDA_OSO          # cada nivel empieza con la vida llena
+    partida["oso_x"] = OSO_X
     partida["hasta_espiritu"] = ESPIRITU_PRIMERA_VEZ
     if es_nivel_jefe(partida):
         # el jefe está desde el principio y dura todo el nivel
@@ -100,21 +100,21 @@ def leer_trazo(partida, pos):
     return None
 
 
-def herir_gato(partida, dano):
-    """Le saca vida al gato, sin bajar de 0."""
+def herir_oso(partida, dano):
+    """Le saca vida al oso, sin bajar de 0."""
     partida["vida"] = max(0, partida["vida"] - dano)
 
 
-def mover_gato(partida, cara):
-    """Mueve el gato hacia donde apunta la cabeza. Si no se ve la cara, se queda quieto."""
+def mover_oso(partida, cara):
+    """Mueve el oso hacia donde apunta la cabeza. Si no se ve la cara, se queda quieto."""
     if cara is None:
         partida["sin_cara"] += 1
         return
     partida["sin_cara"] = 0
     # la cabeza se mueve poco: se exagera la distancia al centro
     objetivo = ANCHO / 2 + (cara[0] - ANCHO / 2) * SENSIBILIDAD_CABEZA
-    objetivo = max(MARGEN_GATO, min(ANCHO - MARGEN_GATO, objetivo))
-    partida["gato_x"] += (objetivo - partida["gato_x"]) * SUAVIDAD_GATO
+    objetivo = max(MARGEN_OSO, min(ANCHO - MARGEN_OSO, objetivo))
+    partida["oso_x"] += (objetivo - partida["oso_x"]) * SUAVIDAD_OSO
 
 
 def crear_fantasma(nivel):
@@ -167,15 +167,15 @@ def actualizar(partida, pos):
                 sonidos.append("hechizo")
             else:
                 sonidos.append("fallo")
-        espiritu.actualizar(partida["gato_x"])
-        partida["gato_x"] += (GATO_X - partida["gato_x"]) * 0.1
+        espiritu.actualizar(partida["oso_x"])
+        partida["oso_x"] += (OSO_X - partida["oso_x"]) * 0.1
 
     elif espiritu is not None:
         # --- Espíritu del Piso atacando: los fantasmas se quedan quietos y hay que esquivar ---
-        mover_gato(partida, pos)
-        resultado = espiritu.actualizar(partida["gato_x"])
+        mover_oso(partida, pos)
+        resultado = espiritu.actualizar(partida["oso_x"])
         if resultado == "dano":
-            herir_gato(partida, DANO_GARRA)
+            herir_oso(partida, DANO_GARRA)
             sonidos.append("dano")
         elif resultado == "golpe":
             sonidos.append("fallo")
@@ -185,8 +185,8 @@ def actualizar(partida, pos):
             sonidos.append("hechizo")
 
     else:
-        # el gato vuelve despacio al centro del círculo
-        partida["gato_x"] += (GATO_X - partida["gato_x"]) * 0.1
+        # el oso vuelve despacio al centro del círculo
+        partida["oso_x"] += (OSO_X - partida["oso_x"]) * 0.1
 
         # 1. La mano: dibujar y lanzar hechizos
         simbolo = leer_trazo(partida, pos)
@@ -207,13 +207,13 @@ def actualizar(partida, pos):
                 partida["por_salir"] -= 1
                 partida["espera"] = nivel["espera"]
 
-        # 3. Los fantasmas se mueven; si llegan al gato, le sacan vida
+        # 3. Los fantasmas se mueven; si llegan al oso, le sacan vida
         for f in partida["fantasmas"]:
             f.mover()
         quedan = []
         for f in partida["fantasmas"]:
-            if f.choca_con_gato():
-                herir_gato(partida, DANO_FANTASMA)
+            if f.choca_con_oso():
+                herir_oso(partida, DANO_FANTASMA)
                 sonidos.append("dano")
             else:
                 quedan.append(f)
@@ -253,7 +253,7 @@ def dibujar_gigante(pantalla, partida, r):
 
 
 def dibujar_ataque(pantalla, partida, r):
-    """La marca y la garra del Espíritu del Piso. Va encima del gato."""
+    """La marca y la garra del Espíritu del Piso. Va encima del oso."""
     if partida["espiritu"] is not None:
         partida["espiritu"].dibujar_ataque(pantalla, r["bosque"].brillo_fuego)
 
@@ -317,10 +317,10 @@ def dibujar_barra_vida(pantalla, x, y, ancho, alto, valor, maximo, titila):
 
 
 def dibujar_indicadores(pantalla, partida, r):
-    """Vida del gato arriba a la izquierda, nivel a la derecha y, si está el jefe, su vida arriba al centro."""
-    menu.escribir(pantalla, r["chica"], "GATO", BLANCO, (24, 24), "midleft")
-    poca = partida["vida"] <= VIDA_GATO * 0.3
-    dibujar_barra_vida(pantalla, 24, 38, 260, 16, partida["vida"], VIDA_GATO, poca)
+    """Vida del oso arriba a la izquierda, nivel a la derecha y, si está el jefe, su vida arriba al centro."""
+    menu.escribir(pantalla, r["chica"], "OSO", BLANCO, (24, 24), "midleft")
+    poca = partida["vida"] <= VIDA_OSO * 0.3
+    dibujar_barra_vida(pantalla, 24, 38, 260, 16, partida["vida"], VIDA_OSO, poca)
 
     texto = r["texto"].render(f"Nivel  {partida['nivel'] + 1} de {len(NIVELES)}", True, COLOR_TEXTO)
     pantalla.blit(texto, (ANCHO - texto.get_width() - 24, 16))
@@ -352,7 +352,7 @@ def dibujar_fin(pantalla, partida, r):
         frase = "El bosque vuelve a dormir"
     else:
         titulo = "Perdiste"
-        frase = "La niebla se llevó al gato"
+        frase = "La niebla se llevó al oso"
     menu.escribir_tallado(pantalla, r["titulo"], titulo, (ANCHO // 2, ALTO // 2 - 70))
     menu.escribir(pantalla, r["texto"], frase, PLATA, (ANCHO // 2, ALTO // 2 - 10))
     menu.separador(pantalla, ALTO // 2 + 25, 300)

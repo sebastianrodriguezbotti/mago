@@ -3,13 +3,17 @@
 
 import math
 import pygame
-from escenario import mezclar, dibujar_brillo
-from ajustes import (GATO_X, GATO_Y, RADIO_GATO, RADIO_FANTASMA,
+from escenario import mezclar, dibujar_brillo, cargar_sprite
+from ajustes import (OSO_X, OSO_Y, RADIO_OSO, RADIO_FANTASMA, IMAGEN_FANTASMA, FANTASMA_ALTO,
                      COLOR_FANTASMA, COLOR_OJOS, COLOR_SIMBOLO, CIAN, NOCHE_2)
 
 
 def crear_sprite_fantasma():
-    """Dibuja una vez el cuerpo del fantasma, semitransparente, y lo devuelve."""
+    """Devuelve la imagen del fantasma (img/fantasma.png). Si no está,
+    dibuja una vez el cuerpo del fantasma, semitransparente."""
+    imagen = cargar_sprite(IMAGEN_FANTASMA, alto=FANTASMA_ALTO)
+    if imagen is not None:
+        return imagen
     r = RADIO_FANTASMA
     sup = pygame.Surface((r * 2, r * 3), pygame.SRCALPHA)
     cuerpo = (*COLOR_FANTASMA, 120)
@@ -36,26 +40,29 @@ class Fantasma:
         self.fase = x * 0.01     # para que no floten todos sincronizados
 
     def mover(self):
-        """Avanza un paso en línea recta hacia el gato."""
-        dx = GATO_X - self.x
-        dy = GATO_Y - self.y
+        """Avanza un paso en línea recta hacia el oso."""
+        dx = OSO_X - self.x
+        dy = OSO_Y - self.y
         distancia = math.hypot(dx, dy)
         if distancia > 0:
             self.x += dx / distancia * self.velocidad
             self.y += dy / distancia * self.velocidad
         self.fase += 0.08
 
-    def choca_con_gato(self):
-        """Devuelve True si el fantasma llegó al gato."""
-        distancia = math.hypot(self.x - GATO_X, self.y - GATO_Y)
-        return distancia < RADIO_GATO + RADIO_FANTASMA
+    def choca_con_oso(self):
+        """Devuelve True si el fantasma llegó al oso."""
+        distancia = math.hypot(self.x - OSO_X, self.y - OSO_Y)
+        return distancia < RADIO_OSO + RADIO_FANTASMA
 
     def dibujar(self, pantalla, sprite, brillos):
         x = int(self.x)
         y = int(self.y + math.sin(self.fase) * 4)    # flota subiendo y bajando
-        pantalla.blit(sprite, (x - RADIO_FANTASMA, y - RADIO_FANTASMA))
-        # el sigilo que hay que dibujar para espantarlo
-        sy = y - RADIO_FANTASMA - 24
+        # (x, y) es el centro del fantasma: la imagen se centra ahí
+        ancho = sprite.get_width()
+        alto = sprite.get_height()
+        pantalla.blit(sprite, (x - ancho // 2, y - alto // 2))
+        # el sigilo que hay que dibujar para espantarlo, arriba de la cabeza
+        sy = y - alto // 2 - 22
         dibujar_brillo(pantalla, brillos, (x, sy), 0.7)
         dibujar_simbolo(pantalla, self.simbolo, x, sy, 13)
 

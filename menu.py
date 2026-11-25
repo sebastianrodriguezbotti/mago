@@ -413,7 +413,7 @@ def dibujar_instrucciones(pantalla, fuente_titulo, fuente, fuente_chica, sombra)
     y = 140
     escribir(pantalla, fuente, "OBJETIVO", CIAN, (MENU_X, y), "midleft")
     objetivo = [
-        "Protegé al gato mago de los espíritus del bosque.",
+        "Protegé al oso de los espíritus del bosque.",
         "Superá los cinco niveles para que el bosque vuelva a dormir.",
         "Cada nivel que superás desbloquea el siguiente.",
     ]
@@ -427,7 +427,7 @@ def dibujar_instrucciones(pantalla, fuente_titulo, fuente, fuente_chica, sombra)
         "Juntá el índice y el pulgar y dibujá ese sigilo en el aire.",
         "Separá los dedos para lanzar el hechizo:",
         "se desvanecen todos los espíritus con ese sigilo.",
-        "Si un espíritu toca al gato, le baja la vida. Si la barra se vacía, perdés.",
+        "Si un espíritu toca al oso, le baja la vida. Si la barra se vacía, perdés.",
         "Desde el nivel 3 sale un gigante del piso: mové la cabeza para esquivarlo.",
         "En el nivel 5 esquivá al jefe y, cuando se descubra, dibujá su sigilo.",
     ]
