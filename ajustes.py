@@ -33,16 +33,19 @@ PROPORCION_LINEA = 2       # ancho > alto * 2  -> línea horizontal (y al revés
 CUADROS_AVISO = 120        # 4 segundos sin dibujar -> aviso en pantalla
 
 # --- Oso y círculo de piedras ---
-OSO_X = ANCHO // 2
-OSO_Y = ALTO - 120
-RADIO_OSO = 45
+SUELO_Y = 545              # la línea del suelo: ahí pisa el oso y de ahí salen los golpes
+OSO_X = ANCHO // 2         # el oso está en el centro
+OSO_Y = SUELO_Y - 60       # el centro del oso, para los choques
+CIRCULO_X = ANCHO // 2     # el círculo de piedras está en el centro: ahí aparece el jefe
+CIRCULO_Y = SUELO_Y - 25
+RADIO_OSO = 50               # para los choques
 # Imágenes de los personajes (PNG con fondo transparente). Si no están, se dibujan con código.
 IMAGEN_OSO = "img/oso"
-OSO_ALTO = 150             # la imagen del oso se escala a esta altura, sin deformarse
+OSO_ALTO = 135             # la imagen del oso se escala a esta altura, sin deformarse
 IMAGEN_FANTASMA = "img/fantasma"
-FANTASMA_ALTO = 90
+FANTASMA_ALTO = 150
 IMAGEN_JEFE = "img/jefe"   # el gigante del piso (en los niveles 3 y 4, y el jefe del 5)
-JEFE_ANCHO = 300
+JEFE_ANCHO = 450
 CIRCULO_RADIO_X = 170      # el círculo de piedras es una elipse alrededor del oso
 CIRCULO_RADIO_Y = 40
 CANTIDAD_PIEDRAS = 9
@@ -57,15 +60,15 @@ CARA_TAMANO_MINIMO = 30    # caras más chicas que esto (en la imagen achicada) 
 # --- Espíritu del Piso: sale del suelo y ataca; hay que esquivar ---
 ESPIRITU_PRIMERA_VEZ = 360     # cuadros desde que empieza el nivel hasta que aparece (12 s)
 ESPIRITU_CADA = 750            # cuadros entre una aparición y la siguiente (25 s)
-ESPIRITU_SUBIR = 75            # cuadros que tarda en subir (y en bajar)
+ESPIRITU_SUBIR = 75            # cuadros que tarda en aparecer (y en desaparecer)
 ESPIRITU_PAUSA = 30            # cuadros entre un ataque y el siguiente
 ESPIRITU_AVISO = 40            # cuadros que se ve la marca antes del golpe
 ESPIRITU_GOLPE = 18            # cuadros que dura la garra afuera
 ESPIRITU_ANCHO_GOLPE = 110     # ancho de la zona que golpea
 ESPIRITU_ALTO_GOLPE = 300
 ESPIRITU_RADIO = 130           # tamaño del gigante (si se dibuja con código)
-ESPIRITU_Y = 275               # altura del centro de la cabeza cuando está afuera del todo
-SUELO_Y = OSO_Y + 60          # la línea del suelo, donde salen los golpes
+ESPIRITU_BASE_Y = CIRCULO_Y    # el gigante está parado en el círculo: ahí apoya la base
+
 
 # --- El jefe del nivel 5: el mismo gigante, pero con vida ---
 JEFE_VIDA = 100
@@ -77,7 +80,7 @@ BARRA_JEFE_ANCHO = 520
 
 # --- Fantasmas ---
 SIMBOLOS = ["—", "|", "V", "Λ"]
-RADIO_FANTASMA = 28
+RADIO_FANTASMA = 45          # para los choques
 
 # --- Partida ---
 VIDA_OSO = 100            # la barra de vida del oso; si llega a 0, perdés
@@ -124,7 +127,7 @@ NIVELES = [
         "velocidad": 2.0,
         "espera": 55,
         "ataques_piso": 3,
-        "novedades": ["Del piso sale un espíritu gigante y te ataca.",
+        "novedades": ["Aparece un espíritu gigante y te ataca desde el piso.",
                       "Mové la cabeza a los costados para esquivar sus golpes."],
     },
     {

@@ -247,7 +247,7 @@ def actualizar(partida, pos):
 # ---------- Dibujo ----------
 
 def dibujar_gigante(pantalla, partida, r):
-    """El Espíritu del Piso asomando. Va entre el cielo y el piso."""
+    """El Espíritu del Piso, en el centro del círculo. Va después del piso y antes del oso."""
     if partida["espiritu"] is not None:
         partida["espiritu"].dibujar_gigante(pantalla, r["bosque"].brillo_fuego)
 
@@ -290,7 +290,7 @@ def dibujar_interfaz(pantalla, partida, pos, r, completa=True):
             menu.escribir_brillante(pantalla, r["texto"], "No veo tu cara: ponete frente a la cámara",
                                     (ANCHO // 2, 130))
         elif espiritu.fase == "subiendo":
-            menu.escribir_brillante(pantalla, r["texto"], "¡Algo sube del piso! Mové la cabeza para esquivar",
+            menu.escribir_brillante(pantalla, r["texto"], "¡Algo sale de la tierra! Mové la cabeza para esquivar",
                                     (ANCHO // 2, 130))
     elif partida["estado"] == "jugando" and partida["sin_varita"] > CUADROS_AVISO:
         menu.escribir(pantalla, r["chica"], "Juntá el índice y el pulgar para dibujar",

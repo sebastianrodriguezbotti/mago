@@ -259,14 +259,14 @@ while andando:
     if en_partida:
         if cielo is not None and piso is not None:
             pantalla.blit(cielo, (0, 0))                        # el cielo, pegado arriba
-            juego.dibujar_gigante(pantalla, partida, recursos)  # asoma detrás del piso
             pantalla.blit(piso, (0, ALTO - piso.get_height()))  # el piso, pegado abajo
+            juego.dibujar_gigante(pantalla, partida, recursos)  # el gigante, en el medio
             bosque.dibujar_fuegos(pantalla)
             bosque.dibujar_oso(pantalla, partida["oso_x"])
         else:
             bosque.dibujar_fondo(pantalla)
-            juego.dibujar_gigante(pantalla, partida, recursos)
             bosque.dibujar_piedras(pantalla, False)
+            juego.dibujar_gigante(pantalla, partida, recursos)
             bosque.dibujar_oso(pantalla, partida["oso_x"])
             bosque.dibujar_piedras(pantalla, True)
             bosque.dibujar_frente(pantalla)

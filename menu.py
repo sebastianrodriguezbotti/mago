@@ -428,7 +428,7 @@ def dibujar_instrucciones(pantalla, fuente_titulo, fuente, fuente_chica, sombra)
         "Separá los dedos para lanzar el hechizo:",
         "se desvanecen todos los espíritus con ese sigilo.",
         "Si un espíritu toca al oso, le baja la vida. Si la barra se vacía, perdés.",
-        "Desde el nivel 3 sale un gigante del piso: mové la cabeza para esquivarlo.",
+        "Desde el nivel 3 aparece un gigante que ataca: mové la cabeza para esquivarlo.",
         "En el nivel 5 esquivá al jefe y, cuando se descubra, dibujá su sigilo.",
     ]
     for i in range(len(lineas)):

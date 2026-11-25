@@ -234,7 +234,7 @@ def crear_fondo():
     luz_hongo = crear_brillos(10, CIAN, 6)
     for i in range(16):
         x = random.randint(20, ANCHO - 20)
-        if abs(x - OSO_X) < CIRCULO_RADIO_X + 20:
+        if abs(x - CIRCULO_X) < CIRCULO_RADIO_X + 20:
             continue    # no en el círculo de piedras
         y = random.randint(ALTO - 90, ALTO - 30)
         for j in range(random.randint(1, 3)):
@@ -300,10 +300,10 @@ def dibujar_sigilo(pantalla, tipo, cx, cy, tam, color):
 def crear_piedras():
     """Devuelve la lista de piedras del círculo, ordenada de atrás hacia adelante."""
     piedras = []
-    centro_y = OSO_Y + 45
+    centro_y = CIRCULO_Y
     for i in range(CANTIDAD_PIEDRAS):
         angulo = math.radians(360 * i / CANTIDAD_PIEDRAS - 90)
-        x = OSO_X + math.cos(angulo) * CIRCULO_RADIO_X
+        x = CIRCULO_X + math.cos(angulo) * CIRCULO_RADIO_X
         y = centro_y + math.sin(angulo) * CIRCULO_RADIO_Y
         # las de adelante (y más grande) se ven más grandes
         escala = 0.7 + 0.3 * (math.sin(angulo) + 1) / 2
@@ -378,7 +378,7 @@ class Bosque:
     def dibujar_fondo(self, pantalla):
         pantalla.blit(self.fondo, (0, 0))
         # la luz del círculo de piedras, que ilumina la niebla del fondo
-        dibujar_brillo(pantalla, self.brillo_circulo, (OSO_X, OSO_Y + 30), 0.25 + 0.15 * self.respirar(0))
+        dibujar_brillo(pantalla, self.brillo_circulo, (CIRCULO_X, CIRCULO_Y - 15), 0.25 + 0.15 * self.respirar(0))
         self.dibujar_ojos(pantalla)
         self.dibujar_niebla(pantalla, self.niebla, ALTO - 260, self.niebla_x)
         for f in self.fuegos:
@@ -408,12 +408,12 @@ class Bosque:
 
     def dibujar_piedras(self, pantalla, adelante):
         """Dibuja las piedras de atrás (adelante=False) o las de adelante (True)."""
-        centro_y = OSO_Y + 45
+        centro_y = CIRCULO_Y
         if not adelante:
             # el anillo tallado en el suelo
             k = self.respirar(0)
             rect = pygame.Rect(0, 0, CIRCULO_RADIO_X * 2 + 30, CIRCULO_RADIO_Y * 2 + 10)
-            rect.center = (OSO_X, centro_y)
+            rect.center = (CIRCULO_X, centro_y)
             pygame.draw.ellipse(pantalla, mezclar(NOCHE_2, CIAN, 0.25 + 0.35 * k), rect, 2)
             rect.inflate_ip(-50, -14)
             pygame.draw.ellipse(pantalla, mezclar(NOCHE_2, CIAN, 0.15 + 0.2 * k), rect, 1)

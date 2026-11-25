@@ -1,5 +1,6 @@
 # espiritu_piso.py
-# El Espíritu del Piso: un fantasma gigante que sube del suelo y golpea donde está el oso.
+# El Espíritu del Piso: un gigante que sale del suelo en el centro del círculo de piedras
+# y golpea donde está el oso.
 # Primero marca el lugar en el suelo, y un momento después sale una garra ahí.
 # El jugador lo esquiva moviendo la cabeza (el oso sigue a la cabeza).
 #
@@ -70,7 +71,7 @@ class EspirituDelPiso:
         self.fase = "subiendo"
         self.jefe = jefe
         self.vida = JEFE_VIDA
-        self.altura = 0.0            # 0 = escondido bajo el piso, 1 = afuera del todo
+        self.altura = 0.0            # 0 = bajo tierra, 1 = afuera del todo
         self.ataques_por_ronda = cantidad_ataques
         self.ataques_restantes = cantidad_ataques
         self.espera = ESPIRITU_PAUSA # cuadros hasta marcar el próximo ataque
@@ -86,10 +87,10 @@ class EspirituDelPiso:
         self.con_imagen = imagenes["con_imagen"]
 
     def posicion(self):
-        """Devuelve (x, y): dónde está el centro de la cabeza ahora."""
-        x = ANCHO // 2 + math.sin(self.tiempo * 0.03) * 40        # se balancea despacio
-        escondido = ALTO + ESPIRITU_RADIO                          # abajo del borde de la pantalla
-        y = escondido + (ESPIRITU_Y - escondido) * self.altura
+        """Devuelve (x, y): el centro de abajo de la imagen (los pies) ahora.
+        Mientras sale del suelo, los pies están más abajo que la base y se ve solo la parte de arriba."""
+        x = CIRCULO_X
+        y = ESPIRITU_BASE_Y + self.sprite.get_height() * (1 - self.altura)
         return (x, y)
 
     def actualizar(self, oso_x):
@@ -183,16 +184,21 @@ class EspirituDelPiso:
         return abs(oso_x - self.ataque_x) < ESPIRITU_ANCHO_GOLPE / 2 + RADIO_OSO * 0.6
 
     def dibujar_gigante(self, pantalla, brillos):
-        """El gigante, asomando detrás del piso. Va antes de dibujar el piso."""
+        """El gigante, parado en el centro del círculo. Sale del suelo y se vuelve a meter."""
         if self.altura <= 0:
             return
         if self.herido > 0 and self.herido % 4 < 2:
             return                   # titila cuando recibe un hechizo
         x, y = self.posicion()
         ancho = self.sprite.get_width()
-        pantalla.blit(self.sprite, (int(x) - ancho // 2, int(y) - ESPIRITU_RADIO))
+        alto = self.sprite.get_height()
+        # recorte: no se dibuja nada debajo del suelo, así parece que sale de la tierra
+        pantalla.set_clip(pygame.Rect(0, 0, ANCHO, ESPIRITU_BASE_Y + 6))
+        pantalla.blit(self.sprite, (int(x) - ancho // 2, int(y) - alto))
+        pantalla.set_clip(None)
         if self.con_imagen:
             return                   # con imagen, los ojos ya vienen en el dibujo
+        y = y - alto + ESPIRITU_RADIO   # en el dibujo hecho con código, los ojos están en la cabeza
         # los ojos le brillan en cian, más fuerte cuando está por golpear
         fuerza = 0.5
         if self.ataque_x is not None and self.golpe == 0:
@@ -210,7 +216,8 @@ class EspirituDelPiso:
         if self.fase != "vulnerable" or self.simbolo is None:
             return
         x, y = self.posicion()
-        sy = int(y - ESPIRITU_RADIO - 45)
+        sy = int(y - self.sprite.get_height() - 30)
+        sy = max(110, sy)            # que no se meta abajo de la barra de vida del jefe
         dibujar_brillo(pantalla, brillos, (x, sy), 1)
         dibujar_simbolo(pantalla, self.simbolo, int(x), sy, 26)
         # una barrita debajo del sigilo: el tiempo que le queda descubierto
