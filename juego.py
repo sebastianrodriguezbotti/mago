@@ -72,6 +72,12 @@ def momentos_del_jefe(nivel):
     return momentos
 
 
+def temblando(partida):
+    """Devuelve True mientras el jefe está saliendo de la tierra (la pantalla tiembla)."""
+    espiritu = partida["espiritu"]
+    return espiritu is not None and espiritu.fase == "subiendo" and partida["estado"] == "jugando"
+
+
 def es_nivel_jefe(partida):
     """Devuelve True si el nivel actual es el del jefe."""
     return datos_nivel(partida).get("jefe", False)
@@ -165,6 +171,8 @@ def actualizar(partida, pos):
         partida["cartel"] -= 1
         if partida["cartel"] <= 0:
             partida["estado"] = "jugando"
+            if partida["espiritu"] is not None:
+                sonidos.append("temblor")     # el jefe del nivel 5 empieza a salir de la tierra
         return sonidos
 
     if partida["estado"] != "jugando":
@@ -277,7 +285,7 @@ def dibujar_fantasmas(pantalla, partida, r):
         f.dibujar(pantalla, r["sprite"], r["bosque"].brillo_fuego)
 
 
-def dibujar_interfaz(pantalla, partida, pos, r, completa=True):
+def dibujar_interfaz(pantalla, partida, pos, r, completa=True, seleccion_fin=0):
     """Dibuja lo que va encima de todo: el trazo, el cursor, los indicadores y los carteles.
     Con completa=False (en la pausa) dibuja solo los indicadores."""
     bosque = r["bosque"]
@@ -312,7 +320,7 @@ def dibujar_interfaz(pantalla, partida, pos, r, completa=True):
     if partida["estado"] == "cartel":
         dibujar_cartel(pantalla, partida, r)
     elif partida["estado"] in ("perdiste", "ganaste"):
-        dibujar_fin(pantalla, partida, r)
+        dibujar_fin(pantalla, partida, r, seleccion_fin)
 
 
 def dibujar_barra_vida(pantalla, x, y, ancho, alto, valor, maximo, titila):
@@ -360,19 +368,19 @@ def dibujar_cartel(pantalla, partida, r):
     menu.escribir_aviso(pantalla, r["chica"], "Pellizcá o Enter para empezar ya", (ANCHO // 2, ALTO // 2 + 190))
 
 
-def dibujar_fin(pantalla, partida, r):
+def dibujar_fin(pantalla, partida, r, seleccion):
+    """La pantalla de ganaste o perdiste. Se queda hasta que el jugador elige una opción."""
+    pantalla.blit(r["velo"], (0, 0))
     pantalla.blit(r["velo"], (0, 0))
     if partida["estado"] == "ganaste":
-        titulo = "Ganaste"
+        titulo = "GANASTE"
         frase = HISTORIA_GANASTE
     else:
-        titulo = "Perdiste"
+        titulo = "PERDISTE"
         frase = HISTORIA_PERDISTE
-    menu.escribir_tallado(pantalla, r["titulo"], titulo, (ANCHO // 2, ALTO // 2 - 90))
+    menu.escribir(pantalla, r["titulo"], titulo, BLANCO, (MENU_X, 190), "midleft", sombra=True)
     renglones = frase.split("\n")
     for i in range(len(renglones)):
-        menu.escribir(pantalla, r["texto"], renglones[i], PLATA, (ANCHO // 2, ALTO // 2 - 20 + i * 34))
-    abajo = ALTO // 2 - 20 + len(renglones) * 34      # debajo del último renglón
-    menu.separador(pantalla, abajo + 10, 300)
-    menu.escribir_aviso(pantalla, r["chica"], "Pellizcá o R: jugar de nuevo     ·     Esc: volver al menú",
-                            (ANCHO // 2, abajo + 50))
+        menu.escribir(pantalla, r["texto"], renglones[i], COLOR_TEXTO, (MENU_X, 260 + i * 34), "midleft", sombra=True)
+    for i in range(len(menu.OPCIONES_FIN)):
+        menu.dibujar_opcion(pantalla, r["menu"], menu.OPCIONES_FIN[i], FIN_Y + i * MENU_SEPARACION, i == seleccion)

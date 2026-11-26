@@ -9,6 +9,7 @@ from ajustes import *
 
 OPCIONES = ["Jugar", "Niveles", "Cómo jugar", "Música y sonido", "Salir"]
 OPCIONES_SONIDO = ["Música", "Efectos", "Volver"]
+OPCIONES_FIN = ["Jugar de nuevo", "Volver al inicio"]
 OPCIONES_PAUSA = ["Continuar", "Niveles", "Cómo jugar", "Música y sonido",
                   "Volver al inicio", "Salir del juego"]
 
@@ -141,6 +142,8 @@ def y_inicio(lista):
     """Devuelve la altura de la primera opción de la lista. La pausa empieza más arriba."""
     if lista is OPCIONES_PAUSA:
         return PAUSA_Y
+    if lista is OPCIONES_FIN:
+        return FIN_Y
     return MENU_Y
 
 

@@ -3,6 +3,7 @@
 # Este archivo arma todo, maneja las escenas (menú, instrucciones, sonido, juego, pausa)
 # y corre el bucle principal. Las reglas de la partida están en juego.py.
 
+import random
 import pygame
 import vision
 import menu
@@ -97,6 +98,7 @@ recursos = {
 }
 recursos["titulo_juego"] = menu.crear_titulo(cargar_fuente(FUENTE_TITULO, TITULO_TAMANO))
 fuente_menu = cargar_fuente(FUENTE_TEXTO, TAMANO_MENU)
+recursos["menu"] = fuente_menu
 sombra_izquierda = menu.crear_sombra_izquierda()
 fuente = recursos["texto"]
 
@@ -110,6 +112,7 @@ cuadros_historia = 0    # cuadros desde que empezó la página (para el texto le
 seleccion = 0       # opción marcada en el menú
 seleccion_sonido = 0  # opción marcada en "Música y sonido"
 seleccion_pausa = 0   # opción marcada en la pausa
+seleccion_fin = 0     # opción marcada en la pantalla de ganaste / perdiste
 destino = None      # a qué escena vamos cuando hay un fundido; None si no hay
 fundido = 255       # 0 = se ve todo, 255 = todo negro. Arranca en negro y aparece.
 partida = juego.nueva_partida()
@@ -137,10 +140,8 @@ while andando:
         if escena == "menu":
             seleccion, eleccion = menu.evento_menu(e, fuente_menu, seleccion)
             if eleccion == "Jugar":
-                nivel_elegido = desbloqueados - 1     # sigue desde el último nivel desbloqueado
-                destino = "juego"
-                if nivel_elegido == 0:
-                    destino = "historia"              # antes del nivel 1 se cuenta la historia
+                nivel_elegido = 0                     # JUGAR siempre empieza en el nivel 1
+                destino = "historia"                  # y antes del nivel 1 se cuenta la historia
             elif eleccion == "Niveles":
                 destino = "niveles"
                 volver_a = "menu"
@@ -218,18 +219,24 @@ while andando:
                 else:
                     destino = "menu"
 
-        elif escena == "juego" and e.type == pygame.KEYDOWN:
-            if e.key == pygame.K_ESCAPE:
-                if partida["estado"] in ("perdiste", "ganaste"):
-                    destino = "menu"          # la partida ya terminó: directo al inicio
-                else:
-                    escena = "pausa"
-                    seleccion_pausa = 0
-            elif e.key == pygame.K_RETURN:
-                juego.saltar_cartel(partida)
-            elif e.key == pygame.K_r and partida["estado"] in ("perdiste", "ganaste"):
+        elif escena == "juego" and partida["estado"] in ("perdiste", "ganaste"):
+            # la partida terminó: la pantalla se queda hasta que el jugador elige
+            seleccion_fin, eleccion = menu.evento_menu(e, fuente_menu, seleccion_fin,
+                                                       menu.OPCIONES_FIN, "Volver al inicio")
+            if e.type == pygame.KEYDOWN and e.key == pygame.K_r:
+                eleccion = "Jugar de nuevo"
+            if eleccion == "Jugar de nuevo":
                 nivel_elegido = partida["inicio"]    # de nuevo desde el mismo nivel
                 destino = "juego"
+            elif eleccion == "Volver al inicio":
+                destino = "menu"
+
+        elif escena == "juego" and e.type == pygame.KEYDOWN:
+            if e.key == pygame.K_ESCAPE:
+                escena = "pausa"
+                seleccion_pausa = 0
+            elif e.key == pygame.K_RETURN:
+                juego.saltar_cartel(partida)
 
     # --- Fundido a negro entre escenas ---
     if destino is not None:
@@ -240,6 +247,7 @@ while andando:
                 andando = False
             elif destino == "juego":
                 partida = juego.nueva_partida(nivel_elegido)
+                seleccion_fin = 0
             elif destino == "historia":
                 pagina_historia = 0
                 cuadros_historia = 0
@@ -264,8 +272,10 @@ while andando:
 
     # En los menús la mano es un mouse: el índice mueve el cursor y pellizcar hace clic.
     # Se "inventan" los mismos eventos que manda el mouse, así los menús no cambian.
+    # La pantalla de ganaste / perdiste también es un menú.
+    hay_menu = escena != "juego" or partida["estado"] in ("perdiste", "ganaste")
     puntero = None
-    if frame is not None and escena != "juego" and destino is None:
+    if frame is not None and hay_menu and destino is None:
         puntero = vision.detectar_dedo(frame)
         pinza = vision.detectar_mano(frame)
         pellizco = pinza is not None
@@ -282,13 +292,10 @@ while andando:
     pellizco_antes = pellizco
 
     if pellizco_nuevo and destino is None:
-        if escena != "juego" and puntero is not None:
+        if hay_menu and puntero is not None:
             pygame.event.post(pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=puntero, button=1))
         elif escena == "juego" and partida["estado"] == "cartel":
             juego.saltar_cartel(partida)
-        elif escena == "juego" and partida["estado"] in ("perdiste", "ganaste"):
-            nivel_elegido = partida["inicio"]
-            destino = "juego"
 
     # --- Actualizar ---
     bosque.actualizar()
@@ -323,7 +330,8 @@ while andando:
             bosque.dibujar_frente(pantalla)
         juego.dibujar_ataque(pantalla, partida, recursos)      # la marca y la garra, encima del oso
         juego.dibujar_fantasmas(pantalla, partida, recursos)   # los fantasmas, arriba de todo
-        juego.dibujar_interfaz(pantalla, partida, pos, recursos, completa=(escena == "juego"))
+        juego.dibujar_interfaz(pantalla, partida, pos, recursos, completa=(escena == "juego"),
+                               seleccion_fin=seleccion_fin)
         if escena == "juego" and frame is not None:
             dibujar_espejo(pantalla, frame, pos)
         if escena != "juego":
@@ -352,11 +360,15 @@ while andando:
                             seleccion_sonido, volumenes)
     elif escena == "instrucciones":
         menu.dibujar_instrucciones(pantalla, recursos["titulo"], fuente_menu, recursos["chica"], sombra_izquierda)
-    if escena != "juego":
+    if hay_menu:
         if puntero is not None:
             dibujar_cursor(pantalla, bosque.brillo_chico, puntero)     # el cursor sigue a la mano
         else:
             dibujar_cursor(pantalla, bosque.brillo_chico, pygame.mouse.get_pos())
+
+    # mientras el jefe sale de la tierra, toda la imagen tiembla un poco
+    if escena == "juego" and juego.temblando(partida):
+        pantalla.scroll(random.randint(-TEMBLOR, TEMBLOR), random.randint(-TEMBLOR, TEMBLOR))
 
     if fundido > 0:
         negro.set_alpha(fundido)

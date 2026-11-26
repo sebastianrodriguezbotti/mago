@@ -34,11 +34,11 @@ PROPORCION_LINEA = 2       # ancho > alto * 2  -> línea horizontal (y al revés
 CUADROS_AVISO = 120        # 4 segundos sin dibujar -> aviso en pantalla
 
 # --- Oso y círculo de piedras ---
-SUELO_Y = 545              # la línea del suelo: ahí pisa el oso y de ahí salen los golpes
+SUELO_Y = 570              # la línea del suelo: ahí pisa el oso y de ahí salen los golpes
 OSO_X = ANCHO // 2         # el oso está en el centro
 OSO_Y = SUELO_Y - 60       # el centro del oso, para los choques
 CIRCULO_X = ANCHO // 2     # el círculo de piedras está en el centro: ahí aparece el jefe
-CIRCULO_Y = SUELO_Y - 25
+CIRCULO_Y = 520            # el centro del círculo de piedras
 RADIO_OSO = 50               # para los choques
 # Imágenes de los personajes (PNG con fondo transparente). Si no están, se dibujan con código.
 IMAGEN_OSO = "img/oso"
@@ -66,7 +66,8 @@ ESPIRITU_GOLPE = 18            # cuadros que dura la garra afuera
 ESPIRITU_ANCHO_GOLPE = 110     # ancho de la zona que golpea
 ESPIRITU_ALTO_GOLPE = 300
 ESPIRITU_RADIO = 130           # tamaño del gigante (si se dibuja con código)
-ESPIRITU_BASE_Y = CIRCULO_Y    # el gigante está parado en el círculo: ahí apoya la base
+ESPIRITU_BASE_Y = 480          # dónde apoya la base el gigante (más chico = más arriba)
+TEMBLOR = 6                    # cuántos píxeles tiembla la pantalla mientras el jefe sale de la tierra
 
 
 # --- El jefe del nivel 5: el mismo gigante, pero con vida ---
@@ -217,6 +218,7 @@ TITULO_ANCHO_MAXIMO = ANCHO - 2 * MENU_X   # si el título es más ancho, se ach
 MENU_Y = 362               # altura de la primera opción
 MENU_SEPARACION = 48       # distancia entre opciones
 PAUSA_Y = 290              # altura de la primera opción de la pausa (tiene más opciones)
+FIN_Y = 420                # altura de la primera opción en la pantalla de ganaste / perdiste
 TAMANO_MENU = 26           # letra de las opciones
 BARRA_X = MENU_X + 300     # dónde empiezan las barras de volumen
 BARRA_ANCHO = 280
