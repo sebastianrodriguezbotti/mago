@@ -9,6 +9,7 @@ import menu
 import juego
 import progreso
 import espiritu_piso
+import historia
 from fantasma import crear_sprite_fantasma
 import os
 from escenario import Bosque, cargar_fuente, cargar_imagen_fondo, dibujar_cursor, mezclar
@@ -99,11 +100,13 @@ fuente_menu = cargar_fuente(FUENTE_TEXTO, TAMANO_MENU)
 sombra_izquierda = menu.crear_sombra_izquierda()
 fuente = recursos["texto"]
 
-escena = "menu"     # "menu", "niveles", "instrucciones", "sonido", "juego" o "pausa"
+escena = "menu"     # "menu", "historia", "niveles", "instrucciones", "sonido", "juego" o "pausa"
 volver_a = "menu"   # a dónde vuelven "Niveles", "Cómo jugar" y "Música y sonido": al inicio o a la pausa
 desbloqueados = progreso.cargar_progreso()   # cuántos niveles se pueden jugar
 nivel_elegido = 0   # en qué nivel empieza la próxima partida
 seleccion_niveles = 0   # tarjeta marcada en "Niveles" (la última es VOLVER)
+pagina_historia = 0     # qué página de la historia se está mostrando
+cuadros_historia = 0    # cuadros desde que empezó la página (para el texto letra por letra)
 seleccion = 0       # opción marcada en el menú
 seleccion_sonido = 0  # opción marcada en "Música y sonido"
 seleccion_pausa = 0   # opción marcada en la pausa
@@ -133,6 +136,8 @@ while andando:
             if eleccion == "Jugar":
                 nivel_elegido = desbloqueados - 1     # sigue desde el último nivel desbloqueado
                 destino = "juego"
+                if nivel_elegido == 0:
+                    destino = "historia"              # antes del nivel 1 se cuenta la historia
             elif eleccion == "Niveles":
                 destino = "niveles"
                 volver_a = "menu"
@@ -187,6 +192,8 @@ while andando:
             if que_paso == "jugar":
                 nivel_elegido = seleccion_niveles
                 destino = "juego"
+                if nivel_elegido == 0:
+                    destino = "historia"
             elif que_paso == "bloqueado":
                 sonidos["fallo"].play()
             elif que_paso == "volver":
@@ -194,6 +201,12 @@ while andando:
                     escena = "pausa"
                 else:
                     destino = "menu"
+
+        elif escena == "historia":
+            pagina_historia, cuadros_historia, termino = historia.evento_historia(
+                e, pagina_historia, cuadros_historia)
+            if termino:
+                destino = "juego"
 
         elif escena == "instrucciones":
             if menu.evento_instrucciones(e, fuente_menu) == "volver":
@@ -224,6 +237,9 @@ while andando:
                 andando = False
             elif destino == "juego":
                 partida = juego.nueva_partida(nivel_elegido)
+            elif destino == "historia":
+                pagina_historia = 0
+                cuadros_historia = 0
             if destino in ("menu", "juego"):
                 volver_a = "menu"
             escena = destino
@@ -243,6 +259,8 @@ while andando:
 
     # --- Actualizar ---
     bosque.actualizar()
+    if escena == "historia":
+        cuadros_historia += 1
     if escena == "juego":
         for nombre in juego.actualizar(partida, pos):
             sonidos[nombre].play()
@@ -286,7 +304,10 @@ while andando:
         bosque.dibujar_piedras(pantalla, True)
         bosque.dibujar_frente(pantalla)
 
-    if escena == "menu":
+    if escena == "historia":
+        historia.dibujar_historia(pantalla, recursos["texto"], recursos["chica"],
+                                  pagina_historia, cuadros_historia, velo)
+    elif escena == "menu":
         menu.dibujar_menu(pantalla, recursos["titulo_juego"], fuente_menu, recursos["chica"], seleccion)
     elif escena == "niveles":
         menu.dibujar_niveles(pantalla, recursos["titulo"], recursos["numero"], fuente_menu, recursos["chica"],

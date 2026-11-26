@@ -410,17 +410,18 @@ def dibujar_instrucciones(pantalla, fuente_titulo, fuente, fuente_chica, sombra)
     pantalla.blit(sombra, (0, 0))
     escribir(pantalla, fuente_titulo, "CÓMO JUGAR", BLANCO, (MENU_X, 70), "midleft")
 
-    y = 140
+    y = 130
     escribir(pantalla, fuente, "OBJETIVO", CIAN, (MENU_X, y), "midleft")
     objetivo = [
-        "Protegé al oso de los espíritus del bosque.",
+        "Sos el oso guardián del bosque. Las piedras se apagaron y los espíritus despertaron:",
+        "devolvelos a su sueño antes de que te alcancen.",
         "Superá los cinco niveles para que el bosque vuelva a dormir.",
         "Cada nivel que superás desbloquea el siguiente.",
     ]
     for i in range(len(objetivo)):
         escribir(pantalla, fuente_chica, objetivo[i], BLANCO, (MENU_X, y + 34 + i * 26), "midleft")
 
-    y = 250
+    y = 275
     escribir(pantalla, fuente, "CÓMO SE JUEGA", CIAN, (MENU_X, y), "midleft")
     lineas = [
         "Cada espíritu lleva sigilos sobre la cabeza.",
@@ -437,7 +438,7 @@ def dibujar_instrucciones(pantalla, fuente_titulo, fuente, fuente_chica, sombra)
     # los cuatro sigilos que existen
     simbolos = ["—", "|", "V", "Λ"]
     for i in range(len(simbolos)):
-        dibujar_simbolo(pantalla, simbolos[i], MENU_X + 20 + i * 90, 500, 18)
+        dibujar_simbolo(pantalla, simbolos[i], MENU_X + 20 + i * 90, 520, 18)
 
     # el único botón: VOLVER, siempre elegido
     dibujar_opcion(pantalla, fuente, "Volver", ALTO - 60, True)

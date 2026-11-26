@@ -331,7 +331,7 @@ def dibujar_barra_vida(pantalla, x, y, ancho, alto, valor, maximo, titila):
 
 def dibujar_indicadores(pantalla, partida, r):
     """Vida del oso arriba a la izquierda, nivel a la derecha y, si está el jefe, su vida arriba al centro."""
-    menu.escribir(pantalla, r["chica"], "OSO", BLANCO, (24, 24), "midleft")
+    menu.escribir(pantalla, r["chica"], "GUARDIÁN", BLANCO, (24, 24), "midleft")
     poca = partida["vida"] <= VIDA_OSO * 0.3
     dibujar_barra_vida(pantalla, 24, 38, 260, 16, partida["vida"], VIDA_OSO, poca)
 
@@ -352,22 +352,27 @@ def dibujar_cartel(pantalla, partida, r):
     menu.escribir_tallado(pantalla, r["titulo"], f"Nivel {partida['nivel'] + 1}", (ANCHO // 2, ALTO // 2 - 110))
     menu.escribir(pantalla, r["subtitulo"], nivel["nombre"], PLATA, (ANCHO // 2, ALTO // 2 - 45))
     menu.separador(pantalla, ALTO // 2 - 5, 320)
+    # la frase de la historia, y debajo qué hay de nuevo en este nivel
+    menu.escribir(pantalla, r["texto"], nivel["historia"], BLANCO, (ANCHO // 2, ALTO // 2 + 32))
     for i in range(len(nivel["novedades"])):
         menu.escribir(pantalla, r["chica"], nivel["novedades"][i], COLOR_TEXTO,
-                      (ANCHO // 2, ALTO // 2 + 35 + i * 32))
-    menu.escribir_brillante(pantalla, r["chica"], "Enter para empezar ya", (ANCHO // 2, ALTO // 2 + 160))
+                      (ANCHO // 2, ALTO // 2 + 80 + i * 28))
+    menu.escribir_brillante(pantalla, r["chica"], "Enter para empezar ya", (ANCHO // 2, ALTO // 2 + 190))
 
 
 def dibujar_fin(pantalla, partida, r):
     pantalla.blit(r["velo"], (0, 0))
     if partida["estado"] == "ganaste":
         titulo = "Ganaste"
-        frase = "El bosque vuelve a dormir"
+        frase = HISTORIA_GANASTE
     else:
         titulo = "Perdiste"
-        frase = "La niebla se llevó al oso"
-    menu.escribir_tallado(pantalla, r["titulo"], titulo, (ANCHO // 2, ALTO // 2 - 70))
-    menu.escribir(pantalla, r["texto"], frase, PLATA, (ANCHO // 2, ALTO // 2 - 10))
-    menu.separador(pantalla, ALTO // 2 + 25, 300)
+        frase = HISTORIA_PERDISTE
+    menu.escribir_tallado(pantalla, r["titulo"], titulo, (ANCHO // 2, ALTO // 2 - 90))
+    renglones = frase.split("\n")
+    for i in range(len(renglones)):
+        menu.escribir(pantalla, r["texto"], renglones[i], PLATA, (ANCHO // 2, ALTO // 2 - 20 + i * 34))
+    abajo = ALTO // 2 - 20 + len(renglones) * 34      # debajo del último renglón
+    menu.separador(pantalla, abajo + 10, 300)
     menu.escribir_brillante(pantalla, r["chica"], "R  jugar de nuevo     ·     Esc  volver al menú",
-                            (ANCHO // 2, ALTO // 2 + 70))
+                            (ANCHO // 2, abajo + 50))
