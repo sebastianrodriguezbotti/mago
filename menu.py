@@ -15,22 +15,36 @@ OPCIONES_PAUSA = ["Continuar", "Niveles", "Cómo jugar", "Música y sonido",
 
 # ---------- Texto ----------
 
-def escribir(pantalla, fuente, texto, color, punto, ancla="center"):
+def escribir(pantalla, fuente, texto, color, punto, ancla="center", sombra=False):
     """Escribe un texto. ancla dice qué parte del texto va en punto:
-    "center" (centrado) o "midleft" (alineado a la izquierda)."""
+    "center" (centrado) o "midleft" (alineado a la izquierda).
+    sombra=True pone una sombra oscura abajo, para que se lea sobre fondos claros."""
+    if sombra:
+        oscuro = fuente.render(texto, True, NOCHE_1)
+        pantalla.blit(oscuro, oscuro.get_rect(**{ancla: (punto[0] + 2, punto[1] + 2)}))
     sup = fuente.render(texto, True, color)
     rect = sup.get_rect(**{ancla: punto})
     pantalla.blit(sup, rect)
 
 
 def escribir_brillante(pantalla, fuente, texto, punto, ancla="center"):
-    """Texto cian con un halo suave alrededor."""
-    # el halo: el mismo texto en cian oscuro, sobre negro, sumado (BLEND_ADD) varias veces corrido
-    halo = fuente.render(texto, True, mezclar(NOCHE_1, CIAN, 0.18), (0, 0, 0))
+    """Texto en cian claro con un brillo suave y una sombra: brilla pero se lee."""
+    # el brillo: el mismo texto en cian muy oscuro, sumado (BLEND_ADD) un poco corrido
+    halo = fuente.render(texto, True, mezclar(NOCHE_1, CIAN, 0.12), (0, 0, 0))
     rect = halo.get_rect(**{ancla: punto})
-    for dx, dy in [(-3, 0), (3, 0), (0, -3), (0, 3), (-2, -2), (2, 2), (-2, 2), (2, -2)]:
+    for dx, dy in [(-2, 0), (2, 0), (0, -2), (0, 2)]:
         pantalla.blit(halo, rect.move(dx, dy), special_flags=pygame.BLEND_ADD)
-    escribir(pantalla, fuente, texto, CIAN, punto, ancla)
+    escribir(pantalla, fuente, texto, CIAN_CLARO, punto, ancla, sombra=True)
+
+
+def escribir_aviso(pantalla, fuente, texto, punto):
+    """Un aviso sobre el juego: el texto brillante encima de una franja oscura, para que se lea
+    aunque atrás haya fantasmas, niebla o luces."""
+    ancho, alto = fuente.size(texto)
+    franja = pygame.Surface((ancho + 48, alto + 16), pygame.SRCALPHA)
+    pygame.draw.rect(franja, (*NOCHE_1, 200), franja.get_rect(), border_radius=12)
+    pantalla.blit(franja, franja.get_rect(center=punto))
+    escribir_brillante(pantalla, fuente, texto, punto)
 
 
 def escribir_tallado(pantalla, fuente, texto, punto, ancla="center"):
@@ -411,7 +425,7 @@ def dibujar_instrucciones(pantalla, fuente_titulo, fuente, fuente_chica, sombra)
     escribir(pantalla, fuente_titulo, "CÓMO JUGAR", BLANCO, (MENU_X, 70), "midleft")
 
     y = 130
-    escribir(pantalla, fuente, "OBJETIVO", CIAN, (MENU_X, y), "midleft")
+    escribir(pantalla, fuente, "OBJETIVO", CIAN_CLARO, (MENU_X, y), "midleft", sombra=True)
     objetivo = [
         "Sos el oso guardián del bosque. Las piedras se apagaron y los espíritus despertaron:",
         "devolvelos a su sueño antes de que te alcancen.",
@@ -422,7 +436,7 @@ def dibujar_instrucciones(pantalla, fuente_titulo, fuente, fuente_chica, sombra)
         escribir(pantalla, fuente_chica, objetivo[i], BLANCO, (MENU_X, y + 34 + i * 26), "midleft")
 
     y = 275
-    escribir(pantalla, fuente, "CÓMO SE JUEGA", CIAN, (MENU_X, y), "midleft")
+    escribir(pantalla, fuente, "CÓMO SE JUEGA", CIAN_CLARO, (MENU_X, y), "midleft", sombra=True)
     lineas = [
         "Cada espíritu lleva sigilos sobre la cabeza.",
         "Juntá el índice y el pulgar y dibujá ese sigilo en el aire.",

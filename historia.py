@@ -62,6 +62,5 @@ def dibujar_historia(pantalla, fuente, fuente_chica, pagina, cuadros, velo):
             pygame.draw.circle(pantalla, PLATA, (int(x), ALTO - 90), 3)
 
     if pagina_completa(pagina, cuadros):
-        menu.escribir_brillante(pantalla, fuente_chica, "Enter o clic para seguir   ·   Esc para saltear",
+        menu.escribir_aviso(pantalla, fuente_chica, "Pellizcá, Enter o clic para seguir   ·   Esc para saltear",
                                 (ANCHO // 2, ALTO - 50))
-        

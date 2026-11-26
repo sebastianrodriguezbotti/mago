@@ -52,31 +52,56 @@ def a_pixeles(punto, ancho, alto):
     return (int(punto.x * ancho), int(punto.y * alto))
 
 
+# MediaPipe es lento: si en el mismo cuadro se pregunta por el dedo y por el pellizco,
+# la mano se busca una sola vez y se guarda acá.
+ultima_mano = {"frame": None, "puntos": None}
+
+
+def puntos_de_la_mano(frame):
+    """Busca la mano en el cuadro (una sola vez por cuadro).
+    Devuelve un diccionario con los puntos que usa el juego, en píxeles, o None si no hay mano."""
+    if ultima_mano["frame"] is frame:
+        return ultima_mano["puntos"]
+    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    resultado = manos.process(rgb)
+    puntos = None
+    if resultado.multi_hand_landmarks is not None:
+        mano = resultado.multi_hand_landmarks[0]
+        alto, ancho = frame.shape[:2]
+        puntos = {
+            "muneca": a_pixeles(mano.landmark[0], ancho, alto),
+            "nudillo": a_pixeles(mano.landmark[9], ancho, alto),   # base del dedo medio
+            "pulgar": a_pixeles(mano.landmark[4], ancho, alto),    # punta del pulgar
+            "indice": a_pixeles(mano.landmark[8], ancho, alto),    # punta del índice
+        }
+    ultima_mano["frame"] = frame
+    ultima_mano["puntos"] = puntos
+    return puntos
+
+
 def detectar_mano(frame):
     """Busca una mano haciendo 'pellizco' (índice y pulgar juntos).
     Devuelve (x, y), el punto entre las dos puntas, o None si no hay
     mano o si los dedos están separados."""
-    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    resultado = manos.process(rgb)
-    if resultado.multi_hand_landmarks is None:
+    p = puntos_de_la_mano(frame)
+    if p is None:
         return None
-
-    mano = resultado.multi_hand_landmarks[0]
-    alto, ancho = frame.shape[:2]
-    muneca = a_pixeles(mano.landmark[0], ancho, alto)
-    nudillo = a_pixeles(mano.landmark[9], ancho, alto)   # base del dedo medio
-    pulgar = a_pixeles(mano.landmark[4], ancho, alto)    # punta del pulgar
-    indice = a_pixeles(mano.landmark[8], ancho, alto)    # punta del índice
-
     # El tamaño de la mano sirve de regla: así funciona cerca o lejos de la cámara
-    tamano_mano = math.dist(muneca, nudillo)
-    separacion = math.dist(pulgar, indice)
+    tamano_mano = math.dist(p["muneca"], p["nudillo"])
+    separacion = math.dist(p["pulgar"], p["indice"])
     if separacion > tamano_mano * PROPORCION_PELLIZCO:
         return None
-
-    x = (pulgar[0] + indice[0]) // 2
-    y = (pulgar[1] + indice[1]) // 2
+    x = (p["pulgar"][0] + p["indice"][0]) // 2
+    y = (p["pulgar"][1] + p["indice"][1]) // 2
     return (x, y)
+
+
+def detectar_dedo(frame):
+    """Para los menús: devuelve (x, y), la punta del índice, o None si no hay mano."""
+    p = puntos_de_la_mano(frame)
+    if p is None:
+        return None
+    return p["indice"]
 
 
 def detectar_cara(frame):

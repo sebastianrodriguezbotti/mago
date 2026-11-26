@@ -114,6 +114,9 @@ destino = None      # a qué escena vamos cuando hay un fundido; None si no hay
 fundido = 255       # 0 = se ve todo, 255 = todo negro. Arranca en negro y aparece.
 partida = juego.nueva_partida()
 pos = None
+puntero = None          # en los menús: dónde está la punta del índice (None si no se ve la mano)
+pellizco_antes = False  # si en el cuadro anterior había pellizco
+sin_pellizco = 0        # cuadros seguidos sin pellizco (para que un pellizco largo no haga dos clics)
 
 
 # ---------- Bucle principal ----------
@@ -249,13 +252,43 @@ while andando:
 
     # --- Cámara ---
     frame = vision.leer_cuadro(cap)
+    pellizco = False
     if frame is not None and escena == "juego":
         if juego.usa_cabeza(partida):
             pos = vision.detectar_cara(frame)      # esquivando: se mueve con la cabeza
         else:
             pos = vision.detectar_mano(frame)      # dibujando: la mano
+            pellizco = pos is not None
     else:
         pos = None
+
+    # En los menús la mano es un mouse: el índice mueve el cursor y pellizcar hace clic.
+    # Se "inventan" los mismos eventos que manda el mouse, así los menús no cambian.
+    puntero = None
+    if frame is not None and escena != "juego" and destino is None:
+        puntero = vision.detectar_dedo(frame)
+        pinza = vision.detectar_mano(frame)
+        pellizco = pinza is not None
+        if pinza is not None:
+            puntero = pinza
+        if puntero is not None:
+            pygame.event.post(pygame.event.Event(pygame.MOUSEMOTION, pos=puntero, rel=(0, 0), buttons=(0, 0, 0)))
+
+    pellizco_nuevo = pellizco and not pellizco_antes and sin_pellizco >= CUADROS_ENTRE_CLICS
+    if pellizco:
+        sin_pellizco = 0
+    else:
+        sin_pellizco += 1
+    pellizco_antes = pellizco
+
+    if pellizco_nuevo and destino is None:
+        if escena != "juego" and puntero is not None:
+            pygame.event.post(pygame.event.Event(pygame.MOUSEBUTTONDOWN, pos=puntero, button=1))
+        elif escena == "juego" and partida["estado"] == "cartel":
+            juego.saltar_cartel(partida)
+        elif escena == "juego" and partida["estado"] in ("perdiste", "ganaste"):
+            nivel_elegido = partida["inicio"]
+            destino = "juego"
 
     # --- Actualizar ---
     bosque.actualizar()
@@ -320,7 +353,10 @@ while andando:
     elif escena == "instrucciones":
         menu.dibujar_instrucciones(pantalla, recursos["titulo"], fuente_menu, recursos["chica"], sombra_izquierda)
     if escena != "juego":
-        dibujar_cursor(pantalla, bosque.brillo_chico, pygame.mouse.get_pos())
+        if puntero is not None:
+            dibujar_cursor(pantalla, bosque.brillo_chico, puntero)     # el cursor sigue a la mano
+        else:
+            dibujar_cursor(pantalla, bosque.brillo_chico, pygame.mouse.get_pos())
 
     if fundido > 0:
         negro.set_alpha(fundido)

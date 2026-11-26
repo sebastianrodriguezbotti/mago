@@ -15,6 +15,7 @@ FPS = 30
 # esta proporción del tamaño de la mano (muñeca -> base del dedo medio).
 # Si cuesta que dibuje, subilo (0.45). Si dibuja solo, bajalo (0.25).
 PROPORCION_PELLIZCO = 0.35
+CUADROS_ENTRE_CLICS = 4    # en los menús: cuadros sin pellizco antes de que otro pellizco cuente como clic
 
 # --- Detección por color (alternativa, en HSV) ---
 COLOR_MIN = (40, 80, 80)
@@ -86,6 +87,19 @@ DANO_FANTASMA = 20         # cuánto le saca un fantasma que lo toca
 DANO_GARRA = 25            # cuánto le saca un golpe del Espíritu del Piso
 CUADROS_CARTEL = 150       # cuánto dura el cartel que presenta cada nivel (5 segundos)
 
+# --- Historia ---
+# Se cuenta antes de jugar el nivel 1: una página por elemento.
+HISTORIA_INICIO = [
+    "Hace mil inviernos, los espíritus del bosque duermen\nbajo un círculo de piedras antiguas.",
+    "Mientras las piedras brillan, los espíritus sueñan\ny el Bosque Encantado vive en paz.",
+    "Pero esta noche las piedras se apagaron.\nY los espíritus despertaron.",
+    "Solo queda el guardián del bosque:\nun viejo oso que todavía recuerda los sigilos antiguos.",
+    "Dibujá los sigilos en el aire\ny devolvé a los espíritus a su sueño.",
+]
+HISTORIA_GANASTE = "El Espíritu del Bosque vuelve a la tierra\ny las piedras se encienden otra vez.\nEl guardián puede descansar... hasta la próxima noche."
+HISTORIA_PERDISTE = "La niebla cubrió el bosque.\nSin su guardián, los espíritus vagan libres."
+CUADROS_POR_LETRA = 1      # velocidad del texto que aparece letra por letra (más = más lento)
+
 # --- Pantalla de niveles: una tarjeta por nivel ---
 TARJETA_ANCHO = 150
 TARJETA_ALTO = 190
@@ -105,10 +119,12 @@ DESBLOQUEAR_TODO = False             # True para probar (o para la defensa): tod
 #   veces_jefe:  cuántas veces aparece el jefe en el nivel (repartidas entre los fantasmas)
 #   ataques_piso: cuántos golpes da el jefe cada vez que aparece
 #   jefe:        True solo en el último nivel: el jefe está todo el nivel y tiene vida
+#   historia:    una frase de la historia, para el cartel del nivel
 #   novedades:   lo que se muestra en el cartel al empezar el nivel
 NIVELES = [
     {
         "nombre": "El despertar",
+        "historia": "Los primeros espíritus asoman entre los árboles.",
         "fantasmas": 8,
         "simbolos": 1,
         "velocidad": 1.2,
@@ -119,6 +135,7 @@ NIVELES = [
     },
     {
         "nombre": "La niebla espesa",
+        "historia": "La niebla sube, y los espíritus se vuelven más fuertes.",
         "fantasmas": 10,
         "simbolos": 2,
         "velocidad": 1.2,
@@ -130,6 +147,7 @@ NIVELES = [
     },
     {
         "nombre": "Raíces que susurran",
+        "historia": "Algo enorme se mueve bajo la tierra...",
         "fantasmas": 12,
         "simbolos": 2,
         "velocidad": 1.4,
@@ -141,6 +159,7 @@ NIVELES = [
     },
     {
         "nombre": "Luna de huesos",
+        "historia": "Bajo la luna, el Espíritu del Bosque ya no quiere esperar.",
         "fantasmas": 14,
         "simbolos": 2,
         "velocidad": 1.6,
@@ -151,6 +170,7 @@ NIVELES = [
     },
     {
         "nombre": "El corazón del bosque",
+        "historia": "En el corazón del bosque, el guardián lo enfrenta cara a cara.",
         "fantasmas": 0,        # en este nivel solo está el jefe
         "simbolos": 1,
         "velocidad": 1.6,
@@ -183,7 +203,7 @@ VELOCIDAD_FUNDIDO = 15         # transición a negro: cuánto oscurece por cuadr
 
 # --- Menú ---
 TITULO_JUEGO = ["BOSQUE", "ENCANTADO"]   # una línea por elemento
-FRASE_INICIO = ["Protegé al oso hasta que", "el bosque vuelva a dormir"]   # abajo a la derecha
+FRASE_INICIO = ["Sos el guardián del bosque.", "Devolvé a los espíritus a su sueño."]   # abajo a la derecha
 IMAGEN_FONDO_MENU = "img/fondo_completo"   # sin extensión: prueba .png, .jpg y .jpeg
 # Durante el juego el fondo son dos capas. Las dos se estiran al ancho de la ventana
 # sin deformarse: el cielo se pega arriba y el piso abajo, encima del cielo.

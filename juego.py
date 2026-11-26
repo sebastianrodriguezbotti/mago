@@ -296,18 +296,18 @@ def dibujar_interfaz(pantalla, partida, pos, r, completa=True):
     dibujar_indicadores(pantalla, partida, r)
 
     if espiritu is not None and espiritu.fase == "vulnerable" and partida["estado"] == "jugando":
-        menu.escribir_brillante(pantalla, r["texto"], "¡Se descubrió! Dibujá su sigilo con la mano",
+        menu.escribir_aviso(pantalla, r["texto"], "¡Se descubrió! Dibujá su sigilo con la mano",
                                 (ANCHO // 2, ALTO - 30))
     elif usa_cabeza(partida):
         if partida["sin_cara"] > 30:
-            menu.escribir_brillante(pantalla, r["texto"], "No veo tu cara: ponete frente a la cámara",
+            menu.escribir_aviso(pantalla, r["texto"], "No veo tu cara: ponete frente a la cámara",
                                     (ANCHO // 2, 130))
         elif espiritu.fase == "subiendo":
-            menu.escribir_brillante(pantalla, r["texto"], "¡Algo sale de la tierra! Mové la cabeza para esquivar",
+            menu.escribir_aviso(pantalla, r["texto"], "¡Algo sale de la tierra! Mové la cabeza para esquivar",
                                     (ANCHO // 2, 130))
     elif partida["estado"] == "jugando" and partida["sin_varita"] > CUADROS_AVISO:
-        menu.escribir(pantalla, r["chica"], "Juntá el índice y el pulgar para dibujar",
-                      COLOR_AVISO, (ANCHO // 2, ALTO // 2 - 60))
+        menu.escribir_aviso(pantalla, r["chica"], "Juntá el índice y el pulgar para dibujar",
+                            (ANCHO // 2, ALTO // 2 - 60))
 
     if partida["estado"] == "cartel":
         dibujar_cartel(pantalla, partida, r)
@@ -357,7 +357,7 @@ def dibujar_cartel(pantalla, partida, r):
     for i in range(len(nivel["novedades"])):
         menu.escribir(pantalla, r["chica"], nivel["novedades"][i], COLOR_TEXTO,
                       (ANCHO // 2, ALTO // 2 + 80 + i * 28))
-    menu.escribir_brillante(pantalla, r["chica"], "Enter para empezar ya", (ANCHO // 2, ALTO // 2 + 190))
+    menu.escribir_aviso(pantalla, r["chica"], "Pellizcá o Enter para empezar ya", (ANCHO // 2, ALTO // 2 + 190))
 
 
 def dibujar_fin(pantalla, partida, r):
@@ -374,5 +374,5 @@ def dibujar_fin(pantalla, partida, r):
         menu.escribir(pantalla, r["texto"], renglones[i], PLATA, (ANCHO // 2, ALTO // 2 - 20 + i * 34))
     abajo = ALTO // 2 - 20 + len(renglones) * 34      # debajo del último renglón
     menu.separador(pantalla, abajo + 10, 300)
-    menu.escribir_brillante(pantalla, r["chica"], "R  jugar de nuevo     ·     Esc  volver al menú",
+    menu.escribir_aviso(pantalla, r["chica"], "Pellizcá o R: jugar de nuevo     ·     Esc: volver al menú",
                             (ANCHO // 2, abajo + 50))
