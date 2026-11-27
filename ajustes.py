@@ -36,17 +36,17 @@ CUADROS_AVISO = 120        # 4 segundos sin dibujar -> aviso en pantalla
 # --- Oso y círculo de piedras ---
 SUELO_Y = 570              # la línea del suelo: ahí pisa el oso y de ahí salen los golpes
 OSO_X = ANCHO // 2         # el oso está en el centro
-OSO_Y = SUELO_Y - 60       # el centro del oso, para los choques
-CIRCULO_X = ANCHO // 2     # el círculo de piedras está en el centro: ahí aparece el jefe
+OSO_Y = SUELO_Y - 65       # el centro del oso, para los choques
+CIRCULO_X = ANCHO // 2 + 30    # el círculo de piedras está en el centro: ahí aparece el jefe
 CIRCULO_Y = 520            # el centro del círculo de piedras
 RADIO_OSO = 50               # para los choques
 # Imágenes de los personajes (PNG con fondo transparente). Si no están, se dibujan con código.
 IMAGEN_OSO = "img/oso"
-OSO_ALTO = 135             # la imagen del oso se escala a esta altura, sin deformarse
+OSO_ALTO = 150             # la imagen del oso se escala a esta altura, sin deformarse
 IMAGEN_FANTASMA = "img/fantasma"
 FANTASMA_ALTO = 150
 IMAGEN_JEFE = "img/jefe"   # el gigante del piso (en los niveles 3 y 4, y el jefe del 5)
-JEFE_ANCHO = 450
+JEFE_ANCHO = 455
 CIRCULO_RADIO_X = 170      # el círculo de piedras es una elipse alrededor del oso
 CIRCULO_RADIO_Y = 40
 CANTIDAD_PIEDRAS = 9
@@ -66,9 +66,10 @@ ESPIRITU_GOLPE = 18            # cuadros que dura la garra afuera
 ESPIRITU_ANCHO_GOLPE = 110     # ancho de la zona que golpea
 ESPIRITU_ALTO_GOLPE = 300
 ESPIRITU_RADIO = 130           # tamaño del gigante (si se dibuja con código)
-ESPIRITU_BASE_Y = 480          # dónde apoya la base el gigante (más chico = más arriba)
+ESPIRITU_BASE_Y = 485          # dónde apoya la base el gigante (más chico = más arriba)
 TEMBLOR = 6                    # cuántos píxeles tiembla la pantalla mientras el jefe sale de la tierra
-
+ESPIRITU_DESPERTAR = 45        # cuadros que el círculo se va encendiendo antes de que aparezca el jefe
+ESPIRITU_ASCENSO = 50          # cuántos píxeles sube mientras se materializa
 
 # --- El jefe del nivel 5: el mismo gigante, pero con vida ---
 JEFE_VIDA = 100
@@ -149,7 +150,7 @@ NIVELES = [
     {
         "nombre": "Raíces que susurran",
         "historia": "Algo enorme se mueve bajo la tierra...",
-        "fantasmas": 12,
+        "fantasmas": 14,
         "simbolos": 2,
         "velocidad": 1.4,
         "espera": 80,

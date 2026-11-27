@@ -1,6 +1,9 @@
 # espiritu_piso.py
-# El Espíritu del Piso: un gigante que sale del suelo en el centro del círculo de piedras
+# El Espíritu del Piso: un gigante que aparece en el centro del círculo de piedras
 # y golpea donde está el oso.
+# Cómo aparece: primero el círculo se va encendiendo; después el gigante se materializa
+# (de transparente a sólido) mientras sube un poco, rápido al principio y frenando al final;
+# y cuando termina de aparecer hay un destello. Al irse hace lo mismo al revés.
 # Primero marca el lugar en el suelo, y un momento después sale una garra ahí.
 # El jugador lo esquiva moviendo la cabeza (el oso sigue a la cabeza).
 #
@@ -11,7 +14,7 @@
 import math
 import random
 import pygame
-from escenario import mezclar, dibujar_brillo, cargar_sprite
+from escenario import mezclar, dibujar_brillo, cargar_sprite, crear_brillos
 from fantasma import dibujar_simbolo
 from ajustes import *
 
@@ -51,7 +54,7 @@ def crear_garra():
 
 
 # Las imágenes se cargan una sola vez, con cargar_imagenes(), antes del bucle principal.
-imagenes = {"gigante": None, "garra": None, "con_imagen": False}
+imagenes = {"gigante": None, "garra": None, "con_imagen": False, "luz": None}
 
 
 def cargar_imagenes():
@@ -63,6 +66,16 @@ def cargar_imagenes():
     else:
         imagenes["gigante"] = dibujar_sprite_gigante()
     imagenes["garra"] = crear_garra()
+    # la luz del círculo: manchas de luz redondas, aplastadas para que queden como el piso
+    luces = []
+    for luz in crear_brillos(170, CIAN, 12):
+        luces.append(pygame.transform.smoothscale(luz, (440, 130)))
+    imagenes["luz"] = luces
+
+
+def suavizar(k):
+    """Aceleración suave: k va de 0 a 1 en línea recta; lo que devuelve arranca rápido y frena al final."""
+    return 1 - (1 - k) ** 3
 
 
 class EspirituDelPiso:
@@ -71,7 +84,9 @@ class EspirituDelPiso:
         self.fase = "subiendo"
         self.jefe = jefe
         self.vida = JEFE_VIDA
-        self.altura = 0.0            # 0 = bajo tierra, 1 = afuera del todo
+        self.altura = 0.0            # 0 = invisible, 1 = aparecido del todo
+        self.despertar = 0           # cuadros que lleva encendiéndose el círculo
+        self.destello = 0            # cuadros que le quedan al destello al terminar de aparecer
         self.ataques_por_ronda = cantidad_ataques
         self.ataques_restantes = cantidad_ataques
         self.espera = ESPIRITU_PAUSA # cuadros hasta marcar el próximo ataque
@@ -88,9 +103,9 @@ class EspirituDelPiso:
 
     def posicion(self):
         """Devuelve (x, y): el centro de abajo de la imagen (los pies) ahora.
-        Mientras sale del suelo, los pies están más abajo que la base y se ve solo la parte de arriba."""
+        Mientras aparece está un poco más abajo, y sube frenando hasta su lugar."""
         x = CIRCULO_X
-        y = ESPIRITU_BASE_Y + self.sprite.get_height() * (1 - self.altura)
+        y = ESPIRITU_BASE_Y + ESPIRITU_ASCENSO * (1 - suavizar(self.altura))
         return (x, y)
 
     def actualizar(self, oso_x):
@@ -101,11 +116,18 @@ class EspirituDelPiso:
             self.herido -= 1
         resultado = None
 
+        if self.destello > 0:
+            self.destello -= 1
+
         if self.fase == "subiendo":
-            self.altura += 1 / ESPIRITU_SUBIR
-            if self.altura >= 1:
-                self.altura = 1
-                self.fase = "atacando"
+            if self.despertar < ESPIRITU_DESPERTAR:
+                self.despertar += 1              # primero se enciende el círculo
+            else:
+                self.altura += 1 / ESPIRITU_SUBIR    # después se materializa
+                if self.altura >= 1:
+                    self.altura = 1
+                    self.fase = "atacando"
+                    self.destello = 20
 
         elif self.fase == "atacando":
             if self.golpe > 0:
@@ -183,8 +205,34 @@ class EspirituDelPiso:
         """Devuelve True si el oso está dentro de la zona del golpe."""
         return abs(oso_x - self.ataque_x) < ESPIRITU_ANCHO_GOLPE / 2 + RADIO_OSO * 0.6
 
+    def luz_del_circulo(self):
+        """Devuelve cuánto brilla el círculo, de 0 a 1."""
+        if self.fase == "subiendo" and self.despertar < ESPIRITU_DESPERTAR:
+            return self.despertar / ESPIRITU_DESPERTAR        # se va encendiendo
+        if self.fase == "subiendo":
+            return 1 - 0.3 * self.altura                      # encendido mientras se materializa
+        if self.destello > 0:
+            return 0.35 + 0.65 * self.destello / 20           # destello al terminar, que se apaga de a poco
+        return 0.35 * self.altura                             # mientras está, queda encendido suave
+
+    def dibujar_luz(self, pantalla):
+        """La luz cian del círculo, y un anillo que se abre mientras se enciende."""
+        k = self.luz_del_circulo()
+        if k <= 0:
+            return
+        luces = imagenes["luz"]
+        luz = luces[min(len(luces) - 1, int(k * (len(luces) - 1)))]
+        pantalla.blit(luz, (CIRCULO_X - luz.get_width() // 2, ESPIRITU_BASE_Y - luz.get_height() // 2),
+                      special_flags=pygame.BLEND_ADD)
+        if self.fase == "subiendo" and self.despertar < ESPIRITU_DESPERTAR:
+            radio = 40 + 180 * suavizar(self.despertar / ESPIRITU_DESPERTAR)
+            anillo = pygame.Rect(0, 0, int(radio * 2), int(radio * 0.6))
+            anillo.center = (CIRCULO_X, ESPIRITU_BASE_Y)
+            pygame.draw.ellipse(pantalla, mezclar(NOCHE_2, CIAN_CLARO, k), anillo, 3)
+
     def dibujar_gigante(self, pantalla, brillos):
-        """El gigante, parado en el centro del círculo. Sale del suelo y se vuelve a meter."""
+        """El gigante, parado en el centro del círculo. Se materializa y se desvanece."""
+        self.dibujar_luz(pantalla)
         if self.altura <= 0:
             return
         if self.herido > 0 and self.herido % 4 < 2:
@@ -192,10 +240,10 @@ class EspirituDelPiso:
         x, y = self.posicion()
         ancho = self.sprite.get_width()
         alto = self.sprite.get_height()
-        # recorte: no se dibuja nada debajo del suelo, así parece que sale de la tierra
-        pantalla.set_clip(pygame.Rect(0, 0, ANCHO, ESPIRITU_BASE_Y + 6))
+        # transparente al aparecer y al irse: se materializa de a poco
+        self.sprite.set_alpha(int(255 * suavizar(self.altura)))
         pantalla.blit(self.sprite, (int(x) - ancho // 2, int(y) - alto))
-        pantalla.set_clip(None)
+        self.sprite.set_alpha(255)
         if self.con_imagen:
             return                   # con imagen, los ojos ya vienen en el dibujo
         y = y - alto + ESPIRITU_RADIO   # en el dibujo hecho con código, los ojos están en la cabeza
