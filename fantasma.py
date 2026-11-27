@@ -32,7 +32,9 @@ def crear_sprite_fantasma():
 
 
 class Fantasma:
+    """Un espíritu que flota hacia el oso con una fila de sigilos; se espanta cuando se los sacan todos."""
     def __init__(self, x, y, simbolos, velocidad):
+        """Crea el fantasma en (x, y) con su lista de sigilos y su velocidad."""
         self.x = x
         self.y = y
         self.simbolos = simbolos  # lista: se borran de a uno, en orden. Vacía = espantado
@@ -67,6 +69,7 @@ class Fantasma:
         return distancia < RADIO_OSO + RADIO_FANTASMA
 
     def dibujar(self, pantalla, sprite, brillos):
+        """Dibuja el fantasma flotando y, arriba, sus sigilos: el que toca dibujar brilla."""
         if self.herido > 0 and self.herido % 4 < 2:
             return                # titila cuando pierde un sigilo
         x = int(self.x)

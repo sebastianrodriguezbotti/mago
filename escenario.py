@@ -141,6 +141,7 @@ def agregar_rama(ramas, inicio, angulo, largo, grosor, nivel):
 
 
 def dibujar_arbol(sup, ramas, color):
+    """Dibuja las ramas de un árbol con líneas; los círculos tapan las uniones entre tramos."""
     for inicio, fin, grosor in ramas:
         pygame.draw.line(sup, color, inicio, fin, max(1, int(grosor)))
         if grosor > 3:   # tapa la unión entre tramos
@@ -249,7 +250,9 @@ def crear_fondo():
 # ---------- Fuegos fatuos ----------
 
 class FuegoFatuo:
+    """Una lucecita cian que flota sola por el bosque, con un camino suave e impredecible."""
     def __init__(self):
+        """Crea el fuego fatuo en un lugar y una dirección al azar."""
         self.x = random.uniform(40, ANCHO - 40)
         self.y = random.uniform(ALTO * 0.2, ALTO * 0.8)
         self.angulo = random.uniform(0, 360)
@@ -257,6 +260,7 @@ class FuegoFatuo:
         self.velocidad = VELOCIDAD_FUEGOS * random.uniform(0.6, 1.3)
 
     def mover(self):
+        """Avanza un paso: cambia un poco de dirección y, si se aleja del centro, gira hacia adentro."""
         # cambia un poquito de dirección en cada cuadro: el camino es suave pero impredecible
         self.angulo += random.uniform(-12, 12)
         # si se aleja mucho, gira de a poco hacia el centro del bosque
@@ -273,6 +277,7 @@ class FuegoFatuo:
         return 0.55 + 0.45 * math.sin(self.fase)
 
     def dibujar(self, pantalla, brillos):
+        """Dibuja el fuego fatuo: una mancha de luz que late y un puntito brillante en el centro."""
         dibujar_brillo(pantalla, brillos, (self.x, self.y), self.intensidad())
         pygame.draw.circle(pantalla, CIAN_CLARO, (int(self.x), int(self.y)), 2)
 
@@ -321,7 +326,9 @@ def crear_piedras():
 # ---------- El bosque entero ----------
 
 class Bosque:
+    """Todo el escenario: fondo, niebla, fuegos fatuos, árboles con viento, piedras, ojos y el oso."""
     def __init__(self):
+        """Prepara todo el escenario una sola vez, antes del bucle principal."""
         # todo esto se crea una sola vez
         self.fondo = crear_fondo()
         self.niebla = crear_niebla()
@@ -351,6 +358,7 @@ class Bosque:
         return 0.5 + 0.5 * math.sin(self.tiempo * VELOCIDAD_RESPIRAR + desfase)
 
     def actualizar(self):
+        """Avanza un cuadro: mueve la niebla y los fuegos, maneja las ráfagas de viento y los ojos."""
         self.tiempo += 1
         self.niebla_x += VELOCIDAD_NIEBLA
         for f in self.fuegos:
@@ -376,6 +384,7 @@ class Bosque:
                 self.ojos = None
 
     def dibujar_fondo(self, pantalla):
+        """Dibuja lo de atrás: el fondo, la luz del círculo, los ojos, la niebla lejana y los fuegos."""
         pantalla.blit(self.fondo, (0, 0))
         # la luz del círculo de piedras, que ilumina la niebla del fondo
         dibujar_brillo(pantalla, self.brillo_circulo, (CIRCULO_X, CIRCULO_Y - 15), 0.25 + 0.15 * self.respirar(0))
@@ -390,6 +399,7 @@ class Bosque:
             f.dibujar(pantalla, self.brillo_fuego)
 
     def dibujar_ojos(self, pantalla):
+        """Si hay ojos mirando entre los árboles, los dibuja; aparecen, parpadean y se van de a poco."""
         if self.ojos is None:
             return
         x, y, vida = self.ojos
@@ -401,6 +411,7 @@ class Bosque:
             pygame.draw.circle(pantalla, mezclar(NOCHE_1, CIAN_CLARO, k), (x + dx, y), 2)
 
     def dibujar_niebla(self, pantalla, niebla, y, corrimiento):
+        """Dibuja una tira de niebla dos veces, una al lado de la otra, para que parezca infinita."""
         ancho = niebla.get_width()
         x = int(corrimiento) % ancho
         pantalla.blit(niebla, (x - ancho, y))

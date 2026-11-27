@@ -311,6 +311,7 @@ def dibujar_candado(pantalla, cx, cy, color):
 
 
 def dibujar_niveles(pantalla, fuente_titulo, fuente_numero, fuente, fuente_chica, seleccion, desbloqueados):
+    """Dibuja la pantalla de niveles: una tarjeta por nivel, con candado si está bloqueado."""
     escribir(pantalla, fuente_titulo, "NIVELES", BLANCO, (MENU_X, 110), "midleft")
 
     for i in range(len(NIVELES)):
@@ -373,6 +374,7 @@ def dibujar_opcion(pantalla, fuente, texto, y, elegida):
 
 
 def dibujar_menu(pantalla, titulo, fuente, fuente_chica, seleccion):
+    """Dibuja la pantalla de inicio: título, opciones a la izquierda y la frase abajo a la derecha."""
     dibujar_titulo(pantalla, titulo)
     for i in range(len(OPCIONES)):
         dibujar_opcion(pantalla, fuente, OPCIONES[i], MENU_Y + i * MENU_SEPARACION, i == seleccion)
@@ -384,6 +386,7 @@ def dibujar_menu(pantalla, titulo, fuente, fuente_chica, seleccion):
 
 
 def dibujar_pausa(pantalla, fuente_titulo, fuente, seleccion):
+    """Dibuja la pausa: el título y sus opciones, encima del juego congelado."""
     escribir(pantalla, fuente_titulo, "PAUSA", BLANCO, (MENU_X, PAUSA_Y - 95), "midleft")
     for i in range(len(OPCIONES_PAUSA)):
         dibujar_opcion(pantalla, fuente, OPCIONES_PAUSA[i], PAUSA_Y + i * MENU_SEPARACION, i == seleccion)
@@ -400,6 +403,7 @@ def dibujar_barra(pantalla, y, volumen):
 
 
 def dibujar_sonido(pantalla, titulo, fuente, fuente_chica, seleccion, volumenes):
+    """Dibuja la pantalla de música y sonido, con una barra de volumen para cada uno."""
     dibujar_titulo(pantalla, titulo)
     for i in range(len(OPCIONES_SONIDO)):
         y = MENU_Y + i * MENU_SEPARACION
@@ -424,6 +428,7 @@ def crear_sombra_izquierda():
 
 
 def dibujar_instrucciones(pantalla, fuente_titulo, fuente, fuente_chica, sombra):
+    """Dibuja la pantalla de cómo jugar: objetivo, reglas, los cuatro sigilos y el botón volver."""
     pantalla.blit(sombra, (0, 0))
     escribir(pantalla, fuente_titulo, "CÓMO JUGAR", BLANCO, (MENU_X, 70), "midleft")
 

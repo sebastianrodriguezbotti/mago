@@ -79,7 +79,9 @@ def suavizar(k):
 
 
 class EspirituDelPiso:
+    """El gigante del círculo de piedras: aparece, ataca donde está el oso y, si es el jefe, tiene vida."""
     def __init__(self, cantidad_ataques, jefe=False):
+        """Crea el gigante con cuántos ataques da por ronda; jefe=True le da vida y lo deja todo el nivel."""
         # fases: "subiendo", "atacando", "vulnerable" (solo el jefe), "bajando", "terminado"
         self.fase = "subiendo"
         self.jefe = jefe
